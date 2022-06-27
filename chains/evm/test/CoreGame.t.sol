@@ -19,12 +19,12 @@ contract CoreGameTest is Test {
         admin = address(this);
         user1 = address(0x100);
         user2 = address(0x200);
+
+        nftCollection.mint(user1);
     }
 
     function testRegister() public {
         // user 1
-        nftCollection.mint(user1);
-
         vm.prank(user1);
         game.registerNFT(address(nftCollection), 0, "", "first");
 
@@ -35,8 +35,6 @@ contract CoreGameTest is Test {
 
     function testFailRegister() public {
         // user 1
-        nftCollection.mint(user1);
-
         vm.prank(user1);
         game.registerNFT(address(nftCollection), 1, "", "first");
     }
