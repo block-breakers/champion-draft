@@ -1,11 +1,11 @@
 import type { GetStaticProps, NextPage } from "next";
 import Head from "next/head";
 import { readFileSync } from "fs";
-import ethers from "ethers";
+import {providers, Contract} from "ethers";
 import { useEffect, useState } from "react";
 
 type Config = {
-  networks: {
+  networks: Record<string, {
     type: string;
     wormholeChainId: number;
     rpc: string;
@@ -13,7 +13,7 @@ type Config = {
     bridgeAddress: string;
     deployedAddress: string;
     emittedVAAs: string;
-  }[];
+  }>;
   wormhole: {
     restAddress: string;
   };
@@ -47,10 +47,10 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
   const [contractReturnValue, setContractReturnValue] = useState(null);
 
   const getOnChainValue = async () => {
-    const url = "http://127.0.0.1:8545";
-    const provider = new ethers.providers.JsonRpcProvider(url);
-    const contract = new ethers.Contract(
-      networks[0].deployedAddress,
+    const url = networks["evm0"].rpc;
+    const provider = new providers.JsonRpcProvider(url);
+    const contract = new Contract(
+      networks["evm0"].deployedAddress,
       abi,
       provider
     );
@@ -70,7 +70,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
         <meta name="description" content="Champion Draft" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <p>{JSON.stringify(networks)}</p>
+      <p>{JSON.stringify(contractReturnValue)}</p>
     </div>
   );
 };
