@@ -4,6 +4,7 @@ import fs from "fs";
 
 async function main() {
     let config = JSON.parse(fs.readFileSync("./xdapp.config.json").toString());
+    console.log(config);
 
     let network = config.networks[process.argv[2]];
     if (!network) {
@@ -42,6 +43,10 @@ async function main() {
         } else {
             throw new Error("Invalid Network Type!");
         }
+    } else {
+        throw new Error("Invalid subcommand");
     }
 }
+
+main()
 
