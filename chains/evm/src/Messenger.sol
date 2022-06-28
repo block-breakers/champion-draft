@@ -24,7 +24,7 @@ contract Messenger {
         nonce = nonce+1;
     }
 
-    function receiveEncodedMsg(bytes memory encodedMsg) public {
+    function receiveEncodedMsg(bytes memory encodedMsg) public returns (string memory) {
         (IWormhole.VM memory vm, bool valid, string memory reason) = core_bridge.parseAndVerifyVM(encodedMsg);
         
         //1. Check Wormhole Guardian Signatures
@@ -40,12 +40,9 @@ contract Messenger {
         _completedMessages[vm.hash] = true;
 
         //Do the thing
-        current_msg = string(vm.payload);
+        return string(vm.payload);
     }
 
-    function getCurrentMsg() public view returns (string memory){
-        return current_msg;
-    }
     /**
         Registers it's sibling applications on other chains as the only ones that can send this instance messages
      */
