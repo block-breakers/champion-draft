@@ -21,7 +21,7 @@ contract CoreGame {
     mapping (address => mapping(uint256 => Champion)) public champions;
     Messenger public messenger;
 
-    event IdVAA(bytes b);
+    event findVAA(address emitterAddr, uint64 seq);
 
     constructor (address _wormhole_core_bridge_address) {
         messenger = new Messenger(_wormhole_core_bridge_address);
@@ -48,11 +48,12 @@ contract CoreGame {
         bytes memory b = mintIdVaa(champion);
         // emit IdVAA(b);
         uint64 seq = messenger.sendMsg(b);
+        emit findVAA(address(messenger), seq);
         return seq;
     }
 
     // TODO: Switch to private after testing
-    function mintIdVaa(Champion memory c) private view returns (bytes memory) {
+    function mintIdVaa(Champion memory c) private pure returns (bytes memory) {
         // include 20 bytes of padding
         uint numBytes = 32 * 6 + bytes(c.image).length + bytes(c.name).length;
         bytes memory buffer = new bytes(numBytes);
@@ -85,7 +86,7 @@ contract CoreGame {
         return buffer;
     }
 
-    function bytesToBuffer(uint _offset, bytes memory b, bytes memory buffer) private view {
+    function bytesToBuffer(uint _offset, bytes memory b, bytes memory buffer) private pure {
         for (uint i = 0; i < b.length; i++) {
             // bitshift 8 bits, bitmask to retain a single byte
             buffer[_offset + i] = b[i];

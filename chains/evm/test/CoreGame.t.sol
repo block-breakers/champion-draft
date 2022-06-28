@@ -14,7 +14,9 @@ contract CoreGameTest is Test {
     address user2;
 
     function setUp() public {
-        game = new CoreGame(address(0xC89Ce4735882C9F0f0FE26686c53074E09B0D550));
+        // avalanche fuji testnet
+        // run test with forge test -vvvv --fork-url https://api.avax-test.network/ext/bc/C/rpc
+        game = new CoreGame(address(0x7bbcE28e64B3F8b84d876Ab298393c38ad7aac4C));
         nftCollection = new ERC721PresetMinterPauserAutoId("bread", "B", "https://cloudflare-ipfs.com/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/");
         admin = address(this);
         user1 = address(0x100);
@@ -26,7 +28,7 @@ contract CoreGameTest is Test {
     function testRegister() public {
         // user 1
         vm.prank(user1);
-        game.registerNFT(address(nftCollection), 0, "", "first");
+        uint64 seq = game.registerNFT(address(nftCollection), 0, "", "first");
 
         ( , , string memory name, , , , , ) = game.champions(address(nftCollection), 0);
 
