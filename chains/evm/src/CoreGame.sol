@@ -54,10 +54,10 @@ contract CoreGame {
         return seq;
     }
 
-    function startBattle(bytes memory encodedMsg) public {
+    function startBattle(bytes memory encodedMsg) public returns (string memory) {
         string memory payload = messenger.receiveEncodedMsg(encodedMsg);
 
-        Champion memory c = decodeIdVaa(payload);
+        Champion memory c = decodeIdVaa(bytes(payload));
 
         return c.name;
     }
