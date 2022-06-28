@@ -8,6 +8,11 @@ type MetamaskButtonProps = {
 const MetamaskButton = ({ provider, setUserAddress}: MetamaskButtonProps) => {
   const requestAccount = async () => {
     let accounts = await provider.send("eth_requestAccounts", []);
+    // const tx = await provider.getSigner().sendTransaction(
+    // {
+    //     to: accounts[0],
+    //     value: ethers.utils.parseEther("1.0")
+    // });
     console.log("accounts", accounts);
     setUserAddress(accounts[0])
     console.log(provider);

@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as ethers from "ethers";
 import { Network } from "../pages/index";
+import { randomWord } from "../util/random";
 
 type TokenSelectorProps = {
   provider: ethers.providers.Web3Provider;
+  signer: any;
   network: Network;
   abi: any;
 };
@@ -11,11 +13,17 @@ type TokenSelectorProps = {
 const TokenSelector = ({
   network,
   provider,
-  abi
+  signer,
+  abi,
 }: TokenSelectorProps) => {
   const [contractAddress, setContractAddress] = useState<string>("");
   const [tokenId, setTokenId] = useState<string>("");
+  const [championName, setChampionName] = useState<string>(randomWord());
   const [lookupResult, setLookupResult] = useState<object | null>(null);
+
+  // useEffect(() => {
+  //   setChampionName(randomWord());
+  // }, []);
 
   const lookupToken = async () => {
     if (contractAddress === "") {
@@ -23,16 +31,20 @@ const TokenSelector = ({
     if (contractAddress === "") {
     }
 
-    const contract = new ethers.Contract(
-      network.deployedAddress,
-      abi,
-      provider.getSigner()
+    const contract = new ethers.Contract(network.deployedAddress, abi, signer);
+
+    console.log("initiating tx");
+    const tx = await contract.registerNFT(
+      contractAddress,
+      tokenId,
+      "",
+      championName
     );
+    console.log("tx", tx);
+    const receipt = await tx.wait();
+    console.log("receipt", receipt);
 
-    const value = await contract.registerNFT(contractAddress, tokenId, "", "my_nft");
-
-    console.log("registerNFT", value);
-    setLookupResult(value);
+    setLookupResult(receipt);
   };
 
   return (
@@ -50,6 +62,13 @@ const TokenSelector = ({
         className="w-full border"
         value={tokenId}
         onChange={(e) => setTokenId(e.currentTarget.value)}
+      />
+      Name:
+      <input
+        type="text"
+        className="w-full border"
+        value={championName}
+        onChange={(e) => setChampionName(e.currentTarget.value)}
       />
       <button className="btn btn-blue" onClick={lookupToken}>
         Register
