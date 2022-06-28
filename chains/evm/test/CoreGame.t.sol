@@ -30,7 +30,7 @@ contract CoreGameTest is Test {
         vm.prank(user1);
         uint64 seq = game.registerNFT(address(nftCollection), 0, "", "first");
 
-        ( , , string memory name, , , , , ) = game.champions(address(nftCollection), 0);
+        ( , , string memory name, , , , , , ) = game.champions(address(nftCollection), 0);
 
         assertEq(name, "first");
     }

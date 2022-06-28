@@ -13,6 +13,7 @@ struct Champion {
     uint speed;
     uint crit_rate;
     uint level;
+    uint64 vaaSeq;
 }
 
 
@@ -43,12 +44,14 @@ contract CoreGame {
         champion.nft = _nft;
         champion.image = _image;
         champion.name = _name;
-        champions[_erc721Contract][_nft] = champion;
 
         bytes memory b = mintIdVaa(champion);
         // emit IdVAA(b);
         uint64 seq = messenger.sendMsg(b);
         emit findVAA(address(messenger), seq);
+        champion.vaaSeq = seq;
+
+        champions[_erc721Contract][_nft] = champion;
         return seq;
     }
 
@@ -83,6 +86,8 @@ contract CoreGame {
         bytesToBuffer(offset, abi.encodePacked(c.level), buffer);
         offset += 32;
 
+        // vaa seq is not stored in payload since not necessary to determine outcome of battle
+
         return buffer;
     }
 
@@ -92,6 +97,4 @@ contract CoreGame {
             buffer[_offset + i] = b[i];
         }
     }
-
-
 }
