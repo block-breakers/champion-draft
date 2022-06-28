@@ -3,12 +3,24 @@ import * as ethers from "ethers";
 import { GetStaticProps } from "next";
 import { readFileSync } from "fs";
 import { erc721 } from "../abi/IERC721";
+// import { abi } from "../abi/ozERC721";
+import { Network } from "../pages/index";
 
 type TokenSelectorProps = {
+  signer: ethers.providers.JsonRpcSigner;
   provider: ethers.providers.Web3Provider;
+  address: string;
+  abi: any;
+  network: Network;
 };
 
-const TokenSelector = ({ provider, abi }: TokenSelectorProps) => {
+const TokenSelector = ({
+  network,
+  signer,
+  address,
+  provider,
+  abi,
+}: TokenSelectorProps) => {
   const [contractAddress, setContractAddress] = useState<string>("");
   const [tokenId, setTokenId] = useState<string>("");
   const [lookupResult, setLookupResult] = useState<object | null>(null);
@@ -19,13 +31,19 @@ const TokenSelector = ({ provider, abi }: TokenSelectorProps) => {
     if (contractAddress === "") {
     }
 
+    const url = network.rpc;
+    console.log(abi);
     const contract = new ethers.Contract(
-      contractAddress,
-      JSON.stringify(erc721),
-      provider
+      network.deployedAddress,
+      abi,
+      signer
     );
 
-    setLookupResult(await contract.ownerOf(tokenId));
+    const value = await contract.registerNFT(contractAddress, tokenId, "", "my_nft");
+
+    console.log(contract.messenger());
+    console.log(value);
+    setLookupResult(value);
   };
 
   return (
@@ -33,7 +51,7 @@ const TokenSelector = ({ provider, abi }: TokenSelectorProps) => {
       NFT Address:
       <input
         type="text"
-        className="border w-full"
+        className="w-full border"
         value={contractAddress}
         onChange={(e) => setContractAddress(e.currentTarget.value)}
       />
@@ -47,7 +65,7 @@ const TokenSelector = ({ provider, abi }: TokenSelectorProps) => {
       <button className="btn btn-blue" onClick={lookupToken}>
         Register
       </button>
-      {lookupResult !== null && `Result:\n{JSON.stringify(lookupResult)}`}
+      {lookupResult !== null && `Result:\n${JSON.stringify(lookupResult)}`}
     </div>
   );
 };

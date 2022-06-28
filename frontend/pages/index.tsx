@@ -10,7 +10,7 @@ const MetamaskButton = dynamic(() => import("../components/metamaskButton"), {
   ssr: false,
 });
 
-type Network = {
+export type Network = {
   type: string;
   wormholeChainId: number;
   rpc: string;
@@ -101,7 +101,13 @@ const Home: NextPage<HomeProps> = ({ network, abi }) => {
           setUserAddress={(a: string) => setUserAddress(a)}
         />
       ) : (
-        <TokenSelector provider={provider} />
+        <TokenSelector
+          address={userAddress}
+          signer={provider.getSigner()}
+          provider={provider}
+          abi={abi}
+          network={network}
+        />
       )}
     </div>
   );

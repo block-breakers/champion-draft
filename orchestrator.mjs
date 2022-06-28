@@ -18,7 +18,7 @@ async function main() {
             );
 
             exec(
-                `cd chains/evm && forge build && forge create --legacy --rpc-url ${network.rpc} --private-key ${network.privateKey} src/CoreGame.sol:CoreGame && exit`,
+                `cd chains/evm && forge build && forge create --legacy --rpc-url ${network.rpc} --private-key ${network.privateKey} src/CoreGame.sol:CoreGame --constructor-args ${network.bridgeAddress} && exit`,
                 (err, out, errStr) => {
                     if (err) {
                         console.error(errStr);
