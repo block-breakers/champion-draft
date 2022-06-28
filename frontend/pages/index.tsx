@@ -62,29 +62,18 @@ const Home: NextPage<HomeProps> = ({ network, abi }) => {
     setProvider(new ethers.providers.Web3Provider((window as any).ethereum));
   }, []);
 
+  // listen for emitted VAAs
+  useEffect(() => {
+    if (provider != null) {
+      const filter = {
+        address: network.deployedAddress,
+        topics: [ethers.utils.id("findVAA(address,uint64)")],
+      };
+      provider.on(filter, (e) => console.log("event", e));
+    }
+  }, [provider]);
+
   const [userAddress, setUserAddress] = useState<string | null>(null);
-
-  // const [contractReturnValue, setContractReturnValue] = useState<any | null>(null);
-  // const getOnChainValue = async () => {
-  //   if (userAddress === "") {
-  //     return;
-  //   }
-
-  //   const url = network.rpc;
-  //   const provider = new ethers.providers.JsonRpcProvider(url);
-  //   const contract = new ethers.Contract(
-  //     network.deployedAddress,
-  //     abi,
-  //     provider
-  //   );
-
-  //   const value = await contract.getValue();
-  //   setContractReturnValue(value);
-  // };
-
-  // useEffect(() => {
-  //   getOnChainValue();
-  // }, [userAddress]);
 
   return (
     <div className="flex flex-row items-center justify-center w-screen h-screen p-0 m-0 align-center">
@@ -101,13 +90,7 @@ const Home: NextPage<HomeProps> = ({ network, abi }) => {
           setUserAddress={(a: string) => setUserAddress(a)}
         />
       ) : (
-        <TokenSelector
-          address={userAddress}
-          signer={provider.getSigner()}
-          provider={provider}
-          abi={abi}
-          network={network}
-        />
+        <TokenSelector provider={provider} network={network} abi={abi} />
       )}
     </div>
   );

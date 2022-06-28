@@ -1,25 +1,17 @@
 import { useState } from "react";
 import * as ethers from "ethers";
-import { GetStaticProps } from "next";
-import { readFileSync } from "fs";
-import { erc721 } from "../abi/IERC721";
-// import { abi } from "../abi/ozERC721";
 import { Network } from "../pages/index";
 
 type TokenSelectorProps = {
-  signer: ethers.providers.JsonRpcSigner;
   provider: ethers.providers.Web3Provider;
-  address: string;
-  abi: any;
   network: Network;
+  abi: any;
 };
 
 const TokenSelector = ({
   network,
-  signer,
-  address,
   provider,
-  abi,
+  abi
 }: TokenSelectorProps) => {
   const [contractAddress, setContractAddress] = useState<string>("");
   const [tokenId, setTokenId] = useState<string>("");
@@ -31,18 +23,15 @@ const TokenSelector = ({
     if (contractAddress === "") {
     }
 
-    const url = network.rpc;
-    console.log(abi);
     const contract = new ethers.Contract(
       network.deployedAddress,
       abi,
-      signer
+      provider.getSigner()
     );
 
     const value = await contract.registerNFT(contractAddress, tokenId, "", "my_nft");
 
-    console.log(contract.messenger());
-    console.log(value);
+    console.log("registerNFT", value);
     setLookupResult(value);
   };
 
