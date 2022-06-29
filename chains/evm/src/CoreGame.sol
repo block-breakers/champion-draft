@@ -5,7 +5,7 @@ import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 import "./Messenger.sol";
 
 struct Champion {
-    uint nft;
+    address championHash;
 	string image;
 	string name;
     uint32 attack;
@@ -17,11 +17,17 @@ struct Champion {
 }
 
 contract CoreGame {
-    // mapping from nft collection to nft unique id to champion
-    mapping (address => mapping(uint256 => Champion)) public champions;
+    // mapping from champion hash to champion
+    uint constant ROUNDS = 10;
+    uint nonce = 0;
+    mapping (address => Champion) public champions;
     Messenger public messenger;
 
     event findVAA(address emitterAddr, uint64 seq);
+    event battleEvent(address damageByHash, uint damage);
+    event battleOutcome(address winnerHash, address loserHash);
+    event championRegistered(uint32 attack, uint32 defense, uint32 speed, uint32 crit_rate);
+    event randomNum(bytes32 rand);
 
     constructor (address _wormhole_core_bridge_address) {
         messenger = new Messenger(_wormhole_core_bridge_address);
@@ -29,9 +35,13 @@ contract CoreGame {
 
     /**
     
-    Returns uint64: a sequence to find the emitted vaa from http
+    Returns address: the champion hash
      */
-    function registerNFT(address _erc721Contract, uint256 _nft, string calldata _image, string calldata _name) public returns (uint64) {
+    function registerNFT(
+        address _erc721Contract,
+         uint256 _nft, 
+         string calldata _image, 
+         string calldata _name) public returns (address) {
         // assert ownership
         assert(IERC721(_erc721Contract).ownerOf(_nft) == msg.sender);
 
@@ -39,10 +49,17 @@ contract CoreGame {
         assert(bytes(_image).length < 1000);
         assert(bytes(_name).length < 100);
 
+        bytes32 myChampionHash = getChampionHash(_erc721Contract, _nft);
+
         Champion memory champion;
-        champion.nft = _nft;
+        champion.championHash = address(uint160(uint256(myChampionHash)));
         champion.image = _image;
         champion.name = _name;
+        champion.attack = byteToUint32(myChampionHash[31] & 0x0F) + 1;
+        champion.defense = byteToUint32((myChampionHash[31] >> 4) & 0x0F)/6 + 1;
+        champion.speed = byteToUint32(myChampionHash[30] & 0x0F) + 1;
+        champion.crit_rate = byteToUint32(myChampionHash[30] >> 4 & 0x0F) + 1;
+        champion.level = 1;
 
         bytes memory b = mintIdVaa(champion);
         // emit IdVAA(b);
@@ -50,16 +67,101 @@ contract CoreGame {
         emit findVAA(address(messenger), seq);
         champion.vaaSeq = seq;
 
-        champions[_erc721Contract][_nft] = champion;
-        return seq;
+        champions[champion.championHash] = champion;
+
+        emit championRegistered(champion.attack, champion.defense, champion.speed, champion.crit_rate);
+        return champion.championHash;
     }
 
-    function startBattle(bytes memory encodedMsg) public returns (string memory) {
+    function byteToUint32(bytes1 b) private pure returns (uint32) {
+        return uint32(uint8(b));
+    }
+
+    function crossChainBattle(address myChampionHash, bytes memory encodedMsg) public {
         string memory payload = messenger.receiveEncodedMsg(encodedMsg);
 
-        Champion memory c = decodeIdVaa(bytes(payload));
+        Champion memory me = champions[myChampionHash];
+        Champion memory opponent = decodeIdVaa(bytes(payload));
+        
+        bytes32 random = rand(msg.sender);
+        nonce += 1;
 
-        return c.name;
+        battle(me, opponent, random);
+    }
+
+    function nativeChainBattle(address myChampionHash, address opponentChampionHash) public {
+        Champion memory me = champions[myChampionHash];
+        Champion memory opponent = champions[opponentChampionHash];
+        
+        bytes32 random = rand(msg.sender);
+        nonce += 1;
+        emit randomNum(random);
+        battle(me, opponent, random);
+    }
+
+    function battle(Champion memory a, Champion memory b, bytes32 random) public {
+        uint damageByA; uint damageByB;
+
+         // idea: use 1 byte (0-255) as random. determine the threshold for event to trigger
+        uint32 a_threshold_to_hit = a.speed * 0xff / (a.speed + b.speed);
+
+        uint32 a_threshold_to_crit = a.speed * 0xff / 100;
+        uint32 b_threshold_to_crit = b.speed * 0xff / 100;
+        
+        for (uint i = 0; i < ROUNDS; i++) {
+            if (byteToUint32(random[i]) < a_threshold_to_hit) {
+                // a successful hit
+                uint damage;
+                if (byteToUint32(random[31-i]) < a_threshold_to_crit) {
+                    damage = a.attack * 2 / b.defense;
+                } else {
+                    damage = a.attack / b.defense;
+                }
+
+                emit battleEvent(a.championHash, damage);
+                damageByA += damage;
+            } else {
+                // b successful hit
+                uint damage;
+                if (byteToUint32(random[31-i]) < b_threshold_to_crit) {
+                    damage = b.attack * 2 / a.defense;
+                } else {
+                    damage = b.attack / a.defense;
+                }
+
+                emit battleEvent(b.championHash, damage);
+                damageByB += damage;
+            }
+        }
+
+        if (damageByA > damageByB) {
+            emit battleOutcome(a.championHash, b.championHash);
+        } else {
+            emit battleOutcome(b.championHash, a.championHash);
+        }
+    }
+
+    /**
+    Generates a random number from [0, n-1]. Security attack: another contract can implement this method and call 
+    this method at the same time they submit a battle to determine the random number. 
+     */
+    function rand(address msg_sender) private view returns(bytes32) {
+        return keccak256(abi.encodePacked(
+            block.timestamp + block.difficulty +
+            ((uint(keccak256(abi.encodePacked(block.coinbase)))) / (block.timestamp)) +
+            block.gaslimit + 
+            ((uint(keccak256(abi.encodePacked(msg_sender)))) / (block.timestamp)) +
+            block.number + 
+            nonce
+        ));
+    }
+    
+    function getChampionHash(address _erc721Contract, uint256 _nft) public pure returns (bytes32) {
+        return championHash(abi.encodePacked(_erc721Contract, _nft));
+    }
+
+    function championHash(bytes memory c) private pure returns (bytes32) {
+        return sha256(c);
     }
 
     // TODO: make function private after testing

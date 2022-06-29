@@ -24,7 +24,7 @@ contract Messenger {
         nonce = nonce+1;
     }
 
-    function receiveEncodedMsg(bytes memory encodedMsg) public returns (string memory) {
+    function receiveEncodedMsg(bytes memory encodedMsg) public view returns (string memory) {
         (IWormhole.VM memory vm, bool valid, string memory reason) = core_bridge.parseAndVerifyVM(encodedMsg);
         
         //1. Check Wormhole Guardian Signatures
@@ -33,11 +33,11 @@ contract Messenger {
         require(valid, reason);
 
         //2. Check if the Emitter Chain contract is registered
-        require(_applicationContracts[vm.emitterChainId] == vm.emitterAddress, "Invalid Emitter Address!");
+        // require(_applicationContracts[vm.emitterChainId] == vm.emitterAddress, "Invalid Emitter Address!");
     
         //3. Check that the message hasn't already been processed
-        require(!_completedMessages[vm.hash], "Message already processed");
-        _completedMessages[vm.hash] = true;
+        // require(!_completedMessages[vm.hash], "Message already processed");
+        // _completedMessages[vm.hash] = true;
 
         //Do the thing
         return string(vm.payload);

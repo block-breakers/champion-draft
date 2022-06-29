@@ -23,21 +23,36 @@ contract CoreGameTest is Test {
         user2 = address(0x200);
 
         nftCollection.mint(user1);
+        nftCollection.mint(user1);
+        nftCollection.mint(user2);
+        nftCollection.mint(user2);
     }
 
-    function testRegister() public {
+    // function testRegister() public {
+    //     // user 1
+    //     vm.prank(user1);
+    //     address c1 = game.registerNFT(address(nftCollection), 0, "", "first");
+
+    //     ( , , string memory name, , , , , , ) = game.champions(c1);
+
+    //     assertEq(name, "first");
+    // }
+
+    // function testFailRegister() public {
+    //     // user 1
+    //     vm.prank(user1);
+    //     game.registerNFT(address(nftCollection), 1, "", "first");
+    // }
+
+    function testBattle() public {
         // user 1
         vm.prank(user1);
-        uint64 seq = game.registerNFT(address(nftCollection), 0, "", "first");
+        address c1 = game.registerNFT(address(nftCollection), 1, "", "first");
 
-        ( , , string memory name, , , , , , ) = game.champions(address(nftCollection), 0);
+        vm.prank(user2);
+        address c2 = game.registerNFT(address(nftCollection), 3, "", "User 2 Champion!");
 
-        assertEq(name, "first");
-    }
-
-    function testFailRegister() public {
-        // user 1
         vm.prank(user1);
-        game.registerNFT(address(nftCollection), 1, "", "first");
+        game.nativeChainBattle(c1, c2);
     }
 }
