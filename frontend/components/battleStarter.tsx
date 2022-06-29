@@ -1,16 +1,12 @@
 import * as ethers from "ethers";
 import { useEffect, useState } from "react";
+import {Network} from "../pages";
 
 type BattleStarterProps = {
   provider: ethers.providers.Web3Provider;
   contract: ethers.Contract;
-  network: any;
+  network: Network;
   abi: any;
-};
-
-type VaaInfo = {
-  address: string;
-  seq: number;
 };
 
 const BattleStarter = ({
@@ -27,6 +23,8 @@ const BattleStarter = ({
     console.log(vaaAsBytes);
     let tx = await contract.startBattle(vaaAsBytes);
     console.log(tx);
+    let receipt = await tx.wait();
+    console.log("receipt", receipt);
   };
 
   return (

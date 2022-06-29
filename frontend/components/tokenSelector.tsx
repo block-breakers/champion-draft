@@ -19,11 +19,6 @@ const TokenSelector = ({
   const [contractAddress, setContractAddress] = useState<string>("");
   const [tokenId, setTokenId] = useState<string>("");
   const [championName, setChampionName] = useState<string>(randomWord());
-  const [lookupResult, setLookupResult] = useState<object | null>(null);
-
-  // useEffect(() => {
-  //   setChampionName(randomWord());
-  // }, []);
 
   const lookupToken = async () => {
     if (contractAddress === "") {
@@ -43,8 +38,6 @@ const TokenSelector = ({
     console.log("tx", tx);
     const receipt = await tx.wait();
     console.log("receipt", receipt);
-
-    setLookupResult(receipt);
   };
 
   return (
@@ -73,7 +66,6 @@ const TokenSelector = ({
       <button className="btn btn-blue" onClick={lookupToken}>
         Register
       </button>
-      {lookupResult !== null && `Result:\n${JSON.stringify(lookupResult)}`}
     </div>
   );
 };
