@@ -38,6 +38,7 @@ export const getStaticProps: GetStaticProps = async () => {
   let abi = JSON.parse(
     readFileSync("../chains/evm/out/CoreGame.sol/CoreGame.json").toString()
   ).abi;
+  console.log(abi);
 
   return {
     props: {
@@ -56,7 +57,7 @@ const Home: NextPage<HomeProps> = ({ network, abi }) => {
   console.log(abi);
 
   const [provider, setProvider] =
-    useState<ethers.providers.JsonRpcProvider | null>(null);
+    useState<ethers.providers.Web3Provider | null>(null);
   const [contract, setContract] = useState<ethers.Contract | null>(null);
 
   // set up provider and contract connection
@@ -74,7 +75,7 @@ const Home: NextPage<HomeProps> = ({ network, abi }) => {
   const [userAddress, setUserAddress] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col items-center justify-center w-screen h-screen p-0 m-0 align-center">
+    <div className="flex flex-col items-center justify-center w-screen p-0 m-0 align-center" style={{minHeight: "100vw"}}>
       <Head>
         <title>Champion Draft</title>
         <meta name="description" content="Champion Draft" />
