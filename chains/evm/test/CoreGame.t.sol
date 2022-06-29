@@ -47,10 +47,10 @@ contract CoreGameTest is Test {
     function testBattle() public {
         // user 1
         vm.prank(user1);
-        address c1 = game.registerNFT(address(nftCollection), 1, "", "first");
+        uint c1 = game.registerNFT(address(nftCollection), 1, "", "first");
 
         vm.prank(user2);
-        address c2 = game.registerNFT(address(nftCollection), 3, "", "User 2 Champion!");
+        uint c2 = game.registerNFT(address(nftCollection), 3, "", "User 2 Champion!");
 
         vm.prank(user1);
         game.nativeChainBattle(c1, c2);

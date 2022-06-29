@@ -5,7 +5,7 @@ import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 import "./Messenger.sol";
 
 struct Champion {
-    address championHash;
+    uint championHash;
 	string image;
 	string name;
     uint32 attack;
@@ -20,12 +20,12 @@ contract CoreGame {
     // mapping from champion hash to champion
     uint constant ROUNDS = 10;
     uint nonce = 0;
-    mapping (address => Champion) public champions;
+    mapping (uint => Champion) public champions;
     Messenger public messenger;
 
     event findVAA(address emitterAddr, uint64 seq);
-    event battleEvent(address damageByHash, uint damage);
-    event battleOutcome(address winnerHash, address loserHash);
+    event battleEvent(uint damageByHash, uint damage);
+    event battleOutcome(uint winnerHash, uint loserHash);
     event championRegistered(uint32 attack, uint32 defense, uint32 speed, uint32 crit_rate);
     event randomNum(bytes32 rand);
 
@@ -41,7 +41,7 @@ contract CoreGame {
         address _erc721Contract,
          uint256 _nft, 
          string calldata _image, 
-         string calldata _name) public returns (address) {
+         string calldata _name) public returns (uint) {
         // assert ownership
         assert(IERC721(_erc721Contract).ownerOf(_nft) == msg.sender);
 
@@ -52,7 +52,7 @@ contract CoreGame {
         bytes32 myChampionHash = getChampionHash(_erc721Contract, _nft);
 
         Champion memory champion;
-        champion.championHash = address(uint160(uint256(myChampionHash)));
+        champion.championHash = uint(myChampionHash);
         champion.image = _image;
         champion.name = _name;
         champion.attack = byteToUint32(myChampionHash[31] & 0x0F) + 1;
@@ -77,7 +77,7 @@ contract CoreGame {
         return uint32(uint8(b));
     }
 
-    function crossChainBattle(address myChampionHash, bytes memory encodedMsg) public {
+    function crossChainBattle(uint myChampionHash, bytes memory encodedMsg) public {
         string memory payload = messenger.receiveEncodedMsg(encodedMsg);
 
         Champion memory me = champions[myChampionHash];
@@ -89,7 +89,7 @@ contract CoreGame {
         battle(me, opponent, random);
     }
 
-    function nativeChainBattle(address myChampionHash, address opponentChampionHash) public {
+    function nativeChainBattle(uint myChampionHash, uint opponentChampionHash) public {
         Champion memory me = champions[myChampionHash];
         Champion memory opponent = champions[opponentChampionHash];
         
