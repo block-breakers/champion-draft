@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
 import { useEffect, useState } from "react";
-import {Network} from "../pages";
+import { Network } from "../pages";
 
 type BattleStarterProps = {
   provider: ethers.providers.Web3Provider;
@@ -16,12 +16,39 @@ const BattleStarter = ({
   abi,
 }: BattleStarterProps) => {
   const [opponentVaa, setOpponentVaa] = useState<string>("");
+  const [championHash, setChamptionHash] = useState<string>("");
+
+  useEffect(() => {
+    const listener = (event) => {
+      console.log("Battle Event: ", event);
+    };
+
+    contract.on("battleEvent", listener);
+    return () => {
+      contract.off("battleEvent", listener);
+    };
+  }, []);
+
+  useEffect(() => {
+    const listener = (event) => {
+      console.log("Battle Outcome: ", event);
+    };
+
+    contract.on("battleOutcome", listener);
+    return () => {
+      contract.off("battleOutcome", listener);
+    };
+  }, []);
 
   const startBattle = async () => {
-    let contract = new ethers.Contract(network.deployedAddress, abi, provider.getSigner());
+    let contract = new ethers.Contract(
+      network.deployedAddress,
+      abi,
+      provider.getSigner()
+    );
     let vaaAsBytes = Buffer.from(opponentVaa, "base64");
     console.log(vaaAsBytes);
-    let tx = await contract.startBattle(vaaAsBytes);
+    let tx = await contract.crossChainBattle(championHash, vaaAsBytes);
     console.log(tx);
     let receipt = await tx.wait();
     console.log("receipt", receipt);
@@ -30,11 +57,20 @@ const BattleStarter = ({
   return (
     <div className="flex flex-col items-center w-1/2 p-6 m-6 border">
       Arena:
+      <br />
+      Opponent vaa:
       <input
         type="text"
         className="w-full m-6 border"
         value={opponentVaa}
         onChange={(e) => setOpponentVaa(e.currentTarget.value)}
+      />
+      My champion hash:
+      <input
+        type="text"
+        className="w-full m-6 border"
+        value={championHash}
+        onChange={(e) => setChamptionHash(e.currentTarget.value)}
       />
       <button className="btn btn-blue" onClick={() => startBattle()}>
         Start Battle

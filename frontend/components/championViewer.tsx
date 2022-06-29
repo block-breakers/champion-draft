@@ -1,11 +1,12 @@
 import * as ethers from "ethers";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Network } from "../pages";
+import ChainSelector from "./chainSelector";
 
 type ChampionViewerProps = {
   provider: ethers.providers.Web3Provider;
-  contract: ethers.Contract;
-  network: Network;
+  networks: Record<string, Network>;
+  abi: string;
 };
 
 type VaaInfo = {
@@ -14,12 +15,15 @@ type VaaInfo = {
   vaa: string;
 };
 
-const ChampionViewer = ({
-  network,
-  provider,
-  contract,
-}: ChampionViewerProps) => {
+const ChampionViewer = ({ networks, provider, abi }: ChampionViewerProps) => {
   const [vaas, setVaas] = useState<VaaInfo[]>([]);
+  const [selectedNetwork, setSelectedNetwork] = useState<Network>(
+    networks[Object.keys(networks)[0]]
+  );
+
+
+  const contract = useMemo(() => 
+    new ethers.Contract(selectedNetwork.deployedAddress, abi, provider), [selectedNetwork]);
 
   // parses an emitted findVAA event into a `VaaInfo`
   const parseEvent = async (event: ethers.Event): Promise<VaaInfo> => {
@@ -30,7 +34,7 @@ const ChampionViewer = ({
     emitterAddr = emitterAddr.substring(2).padStart(64, "0");
 
     let url = `http://localhost:7071/v1/signed_vaa/${
-      network.wormholeChainId
+      selectedNetwork.wormholeChainId
     }/${emitterAddr}/${seq.toString()}`;
 
     console.log(url);
@@ -59,7 +63,7 @@ const ChampionViewer = ({
   // when this component loads, we need to fetch the initial (pre-existing) set of champions
   useEffect(() => {
     fetchVaas();
-  }, []);
+  }, [contract]);
 
   useEffect(() => {
     const listener = async (_author, _old, event) => {
@@ -72,11 +76,13 @@ const ChampionViewer = ({
     return () => {
       contract.off("findVAA", listener);
     };
-  }, []);
+  }, [contract]);
 
   return (
-    <div className="">
-      {vaas.map((vaa) => (
+    <div className="flex flex-col items-center p-4 m-8 border">
+      <ChainSelector selectedNetwork={selectedNetwork} setNetwork={(n) => setSelectedNetwork(n)} networks={networks} />
+      <div>
+        {vaas.map((vaa) => (
           <div key={vaa.seq} className="p-2 m-2 break-all border shadow">
             <div>
               <div className="font-bold">Address: </div>
@@ -99,7 +105,8 @@ const ChampionViewer = ({
               copy
             </button>
           </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };

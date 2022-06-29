@@ -32,16 +32,21 @@ const TokenSelector = ({
     const tx = await contract.registerNFT(
       contractAddress,
       tokenId,
-      "",
-      championName
     );
     console.log("tx", tx);
     const receipt = await tx.wait();
     console.log("receipt", receipt);
+
+
+    const championHash = await contract.getChampionHash(
+      contractAddress,
+      tokenId,
+    );
+    console.log("Champion hash", championHash);
   };
 
   return (
-    <div className="flex flex-col items-center w-1/2">
+    <div className="flex flex-col items-center w-1/2 p-4 border">
       NFT Address:
       <input
         type="text"

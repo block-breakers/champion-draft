@@ -42,19 +42,21 @@ export const getStaticProps: GetStaticProps = async () => {
 
   return {
     props: {
-      network: networks["evm0"],
+      networks: networks,
       abi,
     },
   };
 };
 
 type HomeProps = {
-  network: Network;
+  networks: Record<string, Network>;
   abi: any;
 };
 
-const Home: NextPage<HomeProps> = ({ network, abi }) => {
+const Home: NextPage<HomeProps> = ({ networks, abi }) => {
   console.log(abi);
+
+  const network = networks["evm0"];
 
   const [provider, setProvider] =
     useState<ethers.providers.Web3Provider | null>(null);
@@ -75,7 +77,10 @@ const Home: NextPage<HomeProps> = ({ network, abi }) => {
   const [userAddress, setUserAddress] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col items-center justify-center w-screen p-0 m-0 align-center" style={{minHeight: "100vw"}}>
+    <div
+      className="flex flex-col items-center justify-center w-screen p-0 m-0 align-center"
+      style={{ minHeight: "100vw" }}
+    >
       <Head>
         <title>Champion Draft</title>
         <meta name="description" content="Champion Draft" />
@@ -100,11 +105,16 @@ const Home: NextPage<HomeProps> = ({ network, abi }) => {
       {provider !== null && contract !== null && (
         <>
           <ChampionViewer
+            networks={networks}
+            provider={provider}
+            abi={abi}
+          />
+          <BattleStarter
+            abi={abi}
             network={network}
             provider={provider}
             contract={contract}
           />
-          <BattleStarter  abi={abi} network={network} provider={provider} contract={contract} />
         </>
       )}
     </div>
