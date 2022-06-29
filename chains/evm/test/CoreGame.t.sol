@@ -57,15 +57,43 @@ contract CoreGameTest is Test {
     //     game.crossChainBattle(0, bad);
     // }
 
-    function testBattle() public {
-        // user 1
-        vm.prank(user1);
+    // function testBattle() public {
+    //     // user 1
+    //     vm.prank(user1);
+    //     uint c1 = game.registerNFT(address(nftCollection), 1);
+
+    //     vm.prank(user2);
+    //     uint c2 = game.registerNFT(address(nftCollection), 3);
+
+    //     vm.prank(user1);
+    //     game.nativeChainBattle(c1, c2);
+    // }
+
+    function testUpgrades() public {
+        vm.startPrank(user1);
         uint c1 = game.registerNFT(address(nftCollection), 1);
+        console.log(c1);
 
-        vm.prank(user2);
-        uint c2 = game.registerNFT(address(nftCollection), 3);
+        ( , uint32 orig_def, , ) = game.getStats(c1);
 
-        vm.prank(user1);
-        game.nativeChainBattle(c1, c2);
+        uint8 upgrades = game.getUpgrades(c1);
+        console.log(upgrades);
+        // 2 and 4 should be valid upgrades
+
+        vm.expectRevert(bytes("You are not allowed to upgrade that stat. See getUpgrades for available upgrades."));
+        game.upgrade(c1, 0);
+        vm.expectRevert(bytes("You are not allowed to upgrade that stat. See getUpgrades for available upgrades."));
+        game.upgrade(c1, 1);
+        vm.expectRevert(bytes("You are not allowed to upgrade that stat. See getUpgrades for available upgrades."));
+        game.upgrade(c1, 3);
+        // vm.expectRevert(bytes("You are not allowed to upgrade that stat. See getUpgrades for available upgrades."));
+        // game.upgrade(c1, 5);
+
+        game.upgrade(c1, 2);
+        ( , uint32 def, , ) = game.getStats(c1);
+        assertEq(def, orig_def + 2);
+
+        vm.expectRevert(bytes("Your champion does not have any upgrade points."));
+        game.upgrade(c1, 4);
     }
 }

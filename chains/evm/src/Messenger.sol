@@ -43,6 +43,29 @@ contract Messenger {
         return string(vm.payload);
     }
 
+    function receiveEncodedMsgOnce(bytes memory encodedMsg) public returns (string memory, bytes32 vm_hash) {
+        (IWormhole.VM memory vm, bool valid, string memory reason) = core_bridge.parseAndVerifyVM(encodedMsg);
+        
+        //1. Check Wormhole Guardian Signatures
+        //  If the VM is NOT valid, will return the reason it's not valid
+        //  If the VM IS valid, reason will be blank
+        require(valid, reason);
+
+        //2. Check if the Emitter Chain contract is registered
+        // require(_applicationContracts[vm.emitterChainId] == vm.emitterAddress, "Invalid Emitter Address!");
+    
+        //3. Check that the message hasn't already been processed
+        require(!_completedMessages[vm.hash], "Message already processed");
+        _completedMessages[vm.hash] = true;
+
+        return (string(vm.payload), vm.hash);
+    }
+
+    // function allowVaaResubmit(bytes32 vm_hash) public {
+    //     require(msg.sender == owner, "Only owner can allow resubmission of vaa!");
+    //     _completedMessages[vm_hash] = false;
+    // }
+
     /**
         Registers it's sibling applications on other chains as the only ones that can send this instance messages
      */

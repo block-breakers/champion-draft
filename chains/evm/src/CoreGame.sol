@@ -5,15 +5,30 @@ import "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import "openzeppelin-contracts/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import "./Messenger.sol";
 
+import "forge-std/console.sol";
+
+
 struct Champion {
     uint championHash;
+    address owner;
 	string uri;
     uint32 attack;
     uint32 defense;
     uint32 speed;
     uint32 crit_rate;
     uint32 level;
+    uint32 xp;
+    uint32 upgradePoints;
     uint64 vaaSeq;
+}
+
+struct BattleOutcome {
+    uint championHashA;
+    uint championHashB;
+    uint winner;
+    uint32 winnerXP;
+    uint32 loserXP;
+    // timestamp
 }
 
 contract CoreGame {
@@ -22,6 +37,7 @@ contract CoreGame {
     uint nonce = 0;
     // mapping from champion hash to champion
     mapping (uint => Champion) public champions;
+    mapping (uint => mapping(bytes32 => bool)) championsClaimedXP;
     Messenger public messenger;
 
     event findVAA(address emitterAddr, uint64 seq);
@@ -54,12 +70,14 @@ contract CoreGame {
 
         Champion memory champion;
         champion.championHash = uint(myChampionHash);
+        champion.owner = msg.sender;
         champion.uri = _uri;
         champion.attack = byteToUint32(myChampionHash[31] & 0x0F)/2 + 5;
         champion.defense = byteToUint32((myChampionHash[31] >> 4) & 0x0F)/5 + 1;
         champion.speed = byteToUint32(myChampionHash[30] & 0x0F) + 1;
         champion.crit_rate = byteToUint32(myChampionHash[30] >> 4 & 0x0F) + 10;
         champion.level = 1;
+        champion.upgradePoints = 1;
 
         bytes memory b = mintIdVaa(champion);
         // emit IdVAA(b);
@@ -102,6 +120,11 @@ contract CoreGame {
         battle(me, opponent, random);
     }
 
+    function getStats(uint myChampionHash) public view returns (uint32, uint32, uint32, uint32) {
+        Champion memory me = champions[myChampionHash];
+        return (me.attack, me.defense, me.speed, me.crit_rate);
+    }
+
     function battle(Champion memory a, Champion memory b, bytes32 random) public {
         uint damageByA; uint damageByB;
 
@@ -142,11 +165,99 @@ contract CoreGame {
             }
         }
 
+        BattleOutcome memory outcome;
+        outcome.championHashA = a.championHash;
+        outcome.championHashB = b.championHash;
         if (damageByA > damageByB) {
+            outcome.winner = a.championHash;
+            outcome.winnerXP = uint32(damageByA * 50 / (damageByA + damageByB) + 25 + 4 * (b.level - a.level));
             emit battleOutcome(a.championHash, b.championHash);
+            
         } else {
+            outcome.winner = b.championHash;
             emit battleOutcome(b.championHash, a.championHash);
         }
+        outcome.loserXP = 100 - outcome.winnerXP;
+        outcome.winnerXP += 25;     // bonus for winning
+
+        bytes memory encodedOutcome = abi.encode(outcome);
+        messenger.sendMsg(encodedOutcome);
+    }
+
+    function claimXP(uint myChampionHash, bytes memory encodedMsg) public {
+        (string memory payload, bytes32 vm_hash) = messenger.receiveEncodedMsgOnce(encodedMsg);
+
+        BattleOutcome memory b = abi.decode(bytes(payload), (BattleOutcome));
+
+        if (!(b.championHashA == myChampionHash || b.championHashB == myChampionHash)) {
+            revert("The champion you entered is not impacted from this battle.");
+        }
+
+        if (championsClaimedXP[myChampionHash][vm_hash]) {
+            revert("This champion has already claimed the XP for the battle.");
+        }
+
+        championsClaimedXP[myChampionHash][vm_hash] = true;
+        Champion storage myChampion = champions[myChampionHash];
+        if (myChampionHash == b.winner) {
+            myChampion.xp += b.winnerXP;
+        } else {
+            myChampion.xp += b.loserXP;
+        }
+
+        while (myChampion.xp >= requiredXPtoLevelUp(myChampion.level)) {
+            myChampion.xp -= requiredXPtoLevelUp(myChampion.level);
+            myChampion.level += 1;
+            myChampion.upgradePoints += 1;
+        }
+    }
+
+    /**
+    choice will be either 1,2,3,4 representing attack, defense, speed, crit rate respectfully
+     */
+    function upgrade(uint myChampionHash, uint8 choice) public {
+
+        Champion storage myChampion = champions[myChampionHash];
+        require(myChampion.owner == msg.sender);
+
+        if (myChampion.upgradePoints == 0) {
+            revert("Your champion does not have any upgrade points.");
+        }
+        if (choice > 4) {
+            revert("Invalid choice.");
+        }
+        if ((getUpgrades(myChampionHash) >> (4-choice)) & 0x01 == 0) {
+            revert("You are not allowed to upgrade that stat. See getUpgrades for available upgrades.");
+        }
+
+        if (choice == 1) {
+            myChampion.attack += 5;
+        } else if (choice == 2) {
+            myChampion.defense += 2;
+        } else if (choice == 3) {
+            myChampion.speed += 5;
+        } else {
+            myChampion.crit_rate += 8;
+        }
+
+        myChampion.upgradePoints -= 1;
+    }
+
+    function getUpgrades(uint myChampionHash) public view returns (uint8) {
+        Champion memory myChampion = champions[myChampionHash];
+
+        uint32 curUpgradeLocation = myChampion.level - myChampion.upgradePoints;
+
+        bytes memory hashBytes = abi.encodePacked(myChampionHash);
+        if (curUpgradeLocation % 2 == 0) {
+            return uint8(hashBytes[curUpgradeLocation/2] >> 4) & 0xf;
+        } else {
+            return uint8(hashBytes[curUpgradeLocation/2]) & 0xf;
+        }
+    }
+
+    function requiredXPtoLevelUp(uint32 level) private pure returns (uint32) {
+        return level * 100;
     }
 
     /**
