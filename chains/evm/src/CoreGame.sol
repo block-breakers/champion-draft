@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
+import "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+import "openzeppelin-contracts/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import "./Messenger.sol";
 
 struct Champion {
     uint championHash;
-	string image;
-	string name;
+	string uri;
     uint32 attack;
     uint32 defense;
     uint32 speed;
@@ -17,9 +17,10 @@ struct Champion {
 }
 
 contract CoreGame {
-    // mapping from champion hash to champion
+    // current max rounds allowed: 15
     uint constant ROUNDS = 10;
     uint nonce = 0;
+    // mapping from champion hash to champion
     mapping (uint => Champion) public champions;
     Messenger public messenger;
 
@@ -35,20 +36,17 @@ contract CoreGame {
 
     /**
     
-    Returns address: the champion hash
+    Returns uint: the champion hash
      */
-    function registerNFT(
-        address _erc721Contract,
-         uint256 _nft, 
-         string calldata _image, 
-         string calldata _name) public returns (uint) {
+    function registerNFT(address _erc721Contract, uint256 _nft) public returns (uint) {
+        // require nft collection to support metadata IERC721 metadata extension
+        require(IERC165(_erc721Contract).supportsInterface(0x5b5e139f), "NFT collection does not support metadata.");
+        
         // assert ownership
-        require(IERC721(_erc721Contract).ownerOf(_nft) == msg.sender, "You do not own this NFT");
+        IERC721Metadata nftCollection = IERC721Metadata(_erc721Contract);
+        require(nftCollection.ownerOf(_nft) == msg.sender, "You do not own this NFT");
 
-
-        // check bounds for image and name length
-        require(bytes(_image).length < 1000, "Given image url too long, please make it less than 1000 characters.");
-        require(bytes(_name).length < 100, "Given name too long, please make it less than 100 characters.");
+        string memory _uri = nftCollection.tokenURI(_nft);
 
         bytes32 myChampionHash = getChampionHash(_erc721Contract, _nft);
         // assert that the nft has not been registered yet
@@ -56,12 +54,11 @@ contract CoreGame {
 
         Champion memory champion;
         champion.championHash = uint(myChampionHash);
-        champion.image = _image;
-        champion.name = _name;
-        champion.attack = byteToUint32(myChampionHash[31] & 0x0F) + 1;
-        champion.defense = byteToUint32((myChampionHash[31] >> 4) & 0x0F)/6 + 1;
+        champion.uri = _uri;
+        champion.attack = byteToUint32(myChampionHash[31] & 0x0F)/2 + 5;
+        champion.defense = byteToUint32((myChampionHash[31] >> 4) & 0x0F)/5 + 1;
         champion.speed = byteToUint32(myChampionHash[30] & 0x0F) + 1;
-        champion.crit_rate = byteToUint32(myChampionHash[30] >> 4 & 0x0F) + 1;
+        champion.crit_rate = byteToUint32(myChampionHash[30] >> 4 & 0x0F) + 10;
         champion.level = 1;
 
         bytes memory b = mintIdVaa(champion);
@@ -92,7 +89,6 @@ contract CoreGame {
         Champion memory opponent = decodeIdVaa(bytes(payload));
         
         bytes32 random = rand(msg.sender);
-        nonce += 1;
 
         battle(me, opponent, random);
     }
@@ -102,7 +98,6 @@ contract CoreGame {
         Champion memory opponent = champions[opponentChampionHash];
         
         bytes32 random = rand(msg.sender);
-        nonce += 1;
         emit randomNum(random);
         battle(me, opponent, random);
     }
@@ -120,10 +115,13 @@ contract CoreGame {
             if (byteToUint32(random[i]) < a_threshold_to_hit) {
                 // a successful hit
                 uint damage;
+                
+                // damage multiplier is a random number between 257 and 512
+                uint32 damageMultiplier = byteToUint32(rand(msg.sender)[31]) + 257;
                 if (byteToUint32(random[31-i]) < a_threshold_to_crit) {
-                    damage = a.attack * 2 / b.defense;
+                    damage = a.attack * 2 * damageMultiplier / b.defense / 512;
                 } else {
-                    damage = a.attack / b.defense;
+                    damage = a.attack * damageMultiplier / b.defense / 512;
                 }
 
                 emit battleEvent(a.championHash, damage);
@@ -131,10 +129,12 @@ contract CoreGame {
             } else {
                 // b successful hit
                 uint damage;
+                uint32 damageMultiplier = byteToUint32(rand(msg.sender)[31]) + 257;
+
                 if (byteToUint32(random[31-i]) < b_threshold_to_crit) {
-                    damage = b.attack * 2 / a.defense;
+                    damage = b.attack * 2 * damageMultiplier / a.defense / 512;
                 } else {
-                    damage = b.attack / a.defense;
+                    damage = b.attack * damageMultiplier / a.defense / 512;
                 }
 
                 emit battleEvent(b.championHash, damage);
@@ -153,7 +153,8 @@ contract CoreGame {
     Generates a random number from [0, n-1]. Security attack: another contract can implement this method and call 
     this method at the same time they submit a battle to determine the random number. 
      */
-    function rand(address msg_sender) private view returns(bytes32) {
+    function rand(address msg_sender) private returns(bytes32) {
+        nonce += 1;
         return keccak256(abi.encodePacked(
             block.timestamp + block.difficulty +
             ((uint(keccak256(abi.encodePacked(block.coinbase)))) / (block.timestamp)) +
