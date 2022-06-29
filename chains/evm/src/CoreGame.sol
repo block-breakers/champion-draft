@@ -43,13 +43,16 @@ contract CoreGame {
          string calldata _image, 
          string calldata _name) public returns (uint) {
         // assert ownership
-        assert(IERC721(_erc721Contract).ownerOf(_nft) == msg.sender);
+        require(IERC721(_erc721Contract).ownerOf(_nft) == msg.sender, "You do not own this NFT");
+
 
         // check bounds for image and name length
-        assert(bytes(_image).length < 1000);
-        assert(bytes(_name).length < 100);
+        require(bytes(_image).length < 1000, "Given image url too long, please make it less than 1000 characters.");
+        require(bytes(_name).length < 100, "Given name too long, please make it less than 100 characters.");
 
         bytes32 myChampionHash = getChampionHash(_erc721Contract, _nft);
+        // assert that the nft has not been registered yet
+        require(champions[uint(myChampionHash)].championHash != uint(myChampionHash), "NFT is already registered");
 
         Champion memory champion;
         champion.championHash = uint(myChampionHash);
@@ -78,7 +81,12 @@ contract CoreGame {
     }
 
     function crossChainBattle(uint myChampionHash, bytes memory encodedMsg) public {
-        string memory payload = messenger.receiveEncodedMsg(encodedMsg);
+        string memory payload;
+        try  messenger.receiveEncodedMsg(encodedMsg) returns (string memory p) {
+            payload = p;
+        } catch {
+            revert("Unable to receive encoded message vaa.");
+        }
 
         Champion memory me = champions[myChampionHash];
         Champion memory opponent = decodeIdVaa(bytes(payload));

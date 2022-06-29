@@ -41,8 +41,21 @@ contract CoreGameTest is Test {
     // function testFailRegister() public {
     //     // user 1
     //     vm.prank(user1);
-    //     game.registerNFT(address(nftCollection), 1, "", "first");
+    //     game.registerNFT(address(nftCollection), 2, "", "first");
     // }
+    function testFailDoubleRegister() public {
+        // user 1
+        vm.prank(user1);
+        game.registerNFT(address(nftCollection), 0, "", "first");
+        vm.prank(user1);
+        game.registerNFT(address(nftCollection), 0, "", "first");
+    }
+
+    function testFailVaa() public {
+        bytes memory bad = "aoihgasfasghafdhadf";
+
+        game.crossChainBattle(0, bad);
+    }
 
     function testBattle() public {
         // user 1
