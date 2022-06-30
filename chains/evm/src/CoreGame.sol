@@ -257,7 +257,7 @@ contract CoreGame {
     }
 
     function requiredXPtoLevelUp(uint32 level) private pure returns (uint32) {
-        if (level == 63) return 1000000000000;
+        if (level == 63) return 100000000;
         return level * 100;
     }
 
