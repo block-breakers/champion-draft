@@ -40,16 +40,18 @@ contract CoreGame {
     mapping (uint => mapping(bytes32 => bool)) championsClaimedXP;
     Messenger public messenger;
 
-    event findVAA(address emitterAddr, uint64 seq);
     event battleEvent(uint damageByHash, uint damage);
     event battleOutcome(uint winnerHash, uint loserHash);
-    event championRegistered(uint32 attack, uint32 defense, uint32 speed, uint32 crit_rate);
+    event championRegistered(uint championHash);
     event randomNum(bytes32 rand);
 
     constructor (address _wormhole_core_bridge_address) {
         messenger = new Messenger(_wormhole_core_bridge_address);
     }
 
+    function getMessengerAddr() public view returns (address) {
+        return address(messenger);
+    }
     /**
     
     Returns uint: the champion hash
@@ -82,12 +84,10 @@ contract CoreGame {
         bytes memory b = mintIdVaa(champion);
         // emit IdVAA(b);
         uint64 seq = messenger.sendMsg(b);
-        emit findVAA(address(messenger), seq);
         champion.vaaSeq = seq;
-
         champions[champion.championHash] = champion;
 
-        emit championRegistered(champion.attack, champion.defense, champion.speed, champion.crit_rate);
+        emit championRegistered(champion.championHash);
         return champion.championHash;
     }
 
