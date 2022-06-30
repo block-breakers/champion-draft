@@ -7,12 +7,17 @@ type MetamaskButtonProps = {
 
 const MetamaskButton = ({ provider, setConnected }: MetamaskButtonProps) => {
   const requestAccount = async () => {
+  await console.log(provider.getNetwork());
+    // we must make this request so that wallet providers can prompt the user to accept
     await provider.send("eth_requestAccounts", []);
 
     setConnected(true);
   };
 
-  if (process.browser === false || typeof (window as any).ethereum !== "undefined") {
+  if (
+    process.browser === false ||
+    typeof (window as any).ethereum !== "undefined"
+  ) {
     return (
       <div>
         <button onClick={(_) => requestAccount()} className="btn btn-blue">

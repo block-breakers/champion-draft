@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import * as ethers from "ethers";
 import { Network } from "../pages/index";
 import { randomWord } from "../util/random";
+import * as interfaceChecker from "../util/ercInterfaces";
 
 type TokenSelectorProps = {
   provider: ethers.providers.Web3Provider;
@@ -18,11 +19,10 @@ const TokenSelector = ({
 }: TokenSelectorProps) => {
   const [contractAddress, setContractAddress] = useState<string>("");
   const [tokenId, setTokenId] = useState<string>("");
-  const [championName, setChampionName] = useState<string>(randomWord());
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
 
   const lookupToken = async () => {
-    if (contractAddress === "") {
-    }
     if (contractAddress === "") {
     }
 
@@ -31,6 +31,14 @@ const TokenSelector = ({
       abi,
       provider.getSigner()
     );
+
+    try {
+      interfaceChecker.isErc721(contractAddress, provider);
+    } catch (e) {
+      console.error(e);
+      setErrorMessage("Not ERC721 compatible");
+      return;
+    }
 
     console.log("initiating tx");
     const tx = await contract.registerNFT(contractAddress, tokenId);
@@ -47,30 +55,30 @@ const TokenSelector = ({
   };
 
   return (
-    <div className="flex flex-col items-center p-4 border">
-      NFT Address:
-      <input
-        type="text"
-        className="w-full border"
-        value={contractAddress}
-        onChange={(e) => setContractAddress(e.currentTarget.value)}
-      />
-      Token ID:
-      <input
-        type="text"
-        className="w-full border"
-        value={tokenId}
-        onChange={(e) => setTokenId(e.currentTarget.value)}
-      />
-      Name:
-      <input
-        type="text"
-        className="w-full border"
-        value={championName}
-        onChange={(e) => setChampionName(e.currentTarget.value)}
-      />
+    <div className="flex flex-col items-center space-y-2">
+      <div>
+        Contract Address:
+        <input
+          type="text"
+          className="w-full border"
+          value={contractAddress}
+          onChange={(e) => setContractAddress(e.currentTarget.value)}
+        />
+      </div>
+      <div className="">
+        Token ID:
+        <input
+          type="text"
+          className="w-full border"
+          value={tokenId}
+          onChange={(e) => setTokenId(e.currentTarget.value)}
+        />
+      </div>
+      {errorMessage !== "" && (
+        <div className="font-red-500">{errorMessage}</div>
+      )}
       <button className="btn btn-blue" onClick={lookupToken}>
-        Register
+        Fight
       </button>
     </div>
   );
