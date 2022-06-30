@@ -97,7 +97,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
       ) : (
         <TokenSelector
           provider={provider}
-          signer={provider.getSigner(userAddress)}
+          signer={provider.getSigner()}
           network={network}
           abi={abi}
         />
