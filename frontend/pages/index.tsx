@@ -9,6 +9,7 @@ import ChampionViewer from "../components/championViewer";
 import BattleStarter from "../components/battleStarter";
 import { useWeb3Provider } from "../util/hooks";
 import ChampionRegistrar from "../components/championRegistrar";
+import { getUsersNetworkIdentifier } from "../util/chainConnection";
 
 const MetamaskButton = dynamic(() => import("../components/metamaskButton"), {
   ssr: false,
@@ -56,15 +57,11 @@ type HomeProps = {
 };
 
 const Home: NextPage<HomeProps> = ({ networks, abi }) => {
-  // TODO: this should be the network the user is currently connecting from. We need to do some extra work to be able to detect this based on the wallet they connect
-  const network = networks.evm0;
-
-  const [provider, setProvider] =
-    useState<ethers.providers.Web3Provider | null>(null);
-  const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [championHash, setChampionHash] = useState<string | null>(null);
 
-  // set up provider and contract connection
+  // set up provider
+  const [provider, setProvider] =
+    useState<ethers.providers.Web3Provider | null>(null);
   useEffect(() => {
     if (process.browser === false) {
       return;
@@ -73,8 +70,34 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
       (window as any).ethereum
     );
     setProvider(provider);
-    setContract(new ethers.Contract(network.deployedAddress, abi, provider));
   }, []);
+
+  // figure out which chain the user is connecting from
+  const [usersNetwork, setUsersNetwork] = useState<Network | null>(null);
+  const getUsersNetwork = async (
+    provider: ethers.providers.Web3Provider | null
+  ) => {
+    if (provider === null) {
+      return;
+    }
+    let identifier = await getUsersNetworkIdentifier(provider);
+    console.log("Connecting from ", identifier);
+    setUsersNetwork(networks[identifier]);
+  };
+  useEffect(() => {
+    getUsersNetwork(provider);
+  }, [provider]);
+
+  // set up contract
+  const [contract, setContract] = useState<ethers.Contract | null>(null);
+  useEffect(() => {
+    if (provider === null || usersNetwork === null) {
+      return;
+    }
+    setContract(
+      new ethers.Contract(usersNetwork.deployedAddress, abi, provider)
+    );
+  }, [provider, usersNetwork]);
 
   const startBattle = (opponentVaa: string) => {
     // TODO: this function should start a battle with the current user's champion against the provided vaa `opponentVaa`
@@ -91,15 +114,27 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
         <meta name="description" content="Champion Draft" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div>Mine: </div>
-      <ChampionRegistrar provider={provider} abi={abi} network={network} championHash={championHash} setChampionHash={(h) => setChampionHash(h)} />
-      <div>Theirs: </div>
-      <ChampionViewer
-        networks={networks}
-        provider={provider}
-        abi={abi}
-        startBattle={startBattle}
-      />
+      {provider === null || usersNetwork === null ? (
+        "Loading..."
+      ) : (
+        <>
+          <div>Mine: </div>
+          <ChampionRegistrar
+            provider={provider}
+            abi={abi}
+            network={usersNetwork}
+            championHash={championHash}
+            setChampionHash={(h) => setChampionHash(h)}
+          />
+          <div>Theirs: </div>
+          <ChampionViewer
+            networks={networks}
+            provider={provider}
+            abi={abi}
+            startBattle={startBattle}
+          />
+        </>
+      )}
     </div>
   );
 };
