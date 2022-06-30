@@ -2,20 +2,20 @@ import { useEffect, useState } from "react";
 
 type ChampionCardProps = {
     // the ethers provider that allows us to call contracts on chain
-    championData: any;
+    champion: any;
+    vaa: string;
     isSelf: boolean;
     // the callback to fire when the user chooses to start a battle
     startBattle: (opponentVaa: string) => void;
 };
 
-const ChampionCard = ({championData, isSelf, startBattle}: ChampionCardProps) => {
-    if (championData == null) {
+const ChampionCard = ({champion, vaa, isSelf, startBattle}: ChampionCardProps) => {
+    if (champion == null) {
         return <></>;
     }
 
     const [imageURI, setImageURI] = useState(null);
     const [name, setName] = useState("Unknown name");
-    const champion = championData.champion;
 
     // const fetchMetadata = async (uri: string) => {
     //     uri = "https://crossorigin.me/" + uri;
@@ -69,7 +69,7 @@ const ChampionCard = ({championData, isSelf, startBattle}: ChampionCardProps) =>
                 <div className="px-6 pb-6 text-center">
                 <button 
                     className="btn bg-red-300 hover:bg-red-400"
-                    onClick={() => startBattle(championData.vaa)}>
+                    onClick={() => startBattle(vaa)}>
                                     Battle!</button>
                 </div>
             }

@@ -103,7 +103,7 @@ const ChampionViewer = ({ networks, provider, abi, startBattle }: ChampionViewer
       />
       <div className="mt-9 grid grid-cols-3 gap-4">
         {champions.map((championData) => (
-          <ChampionCard championData={championData} isSelf={false} startBattle={startBattle} />
+          <ChampionCard champion={championData.champion} vaa={championData.vaa} isSelf={false} startBattle={startBattle} />
         ))}
       </div>
     </div>
