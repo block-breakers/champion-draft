@@ -23,7 +23,7 @@ const ChampionViewer = ({ networks, provider, abi }: ChampionViewerProps) => {
 
 
   const contract = useMemo(() => 
-    new ethers.Contract(selectedNetwork.deployedAddress, abi, provider), [selectedNetwork]);
+    new ethers.Contract(selectedNetwork.deployedAddress, abi, new ethers.providers.JsonRpcProvider(selectedNetwork.rpc)), [selectedNetwork]);
 
   // parses an emitted findVAA event into a `VaaInfo`
   const parseEvent = async (event: ethers.Event): Promise<VaaInfo> => {

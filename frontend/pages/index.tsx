@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import TokenSelector from "../components/tokenSelector";
 import ChampionViewer from "../components/championViewer";
 import BattleStarter from "../components/battleStarter";
+import {useWeb3Provider} from "../util/hooks";
 
 const MetamaskButton = dynamic(() => import("../components/metamaskButton"), {
   ssr: false,
@@ -57,6 +58,8 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
   console.log(abi);
 
   const network = networks["evm0"];
+
+  // const provider = useWeb3Provider([]);
 
   const [provider, setProvider] =
     useState<ethers.providers.Web3Provider | null>(null);
