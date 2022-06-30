@@ -1,7 +1,7 @@
 export const saveChampionHash = (hash: string) => {
-    localStorage.setItem("championHash", hash);
-}
+  localStorage.setItem("championHash", hash);
+};
 
-export const getChampionHash = () => {
-    return localStorage.getItem("championHash");
-}
+export const fetchChampionHash = (): string | null => {
+  return localStorage.getItem("championHash");
+};

@@ -14,3 +14,4 @@ export const useWeb3Provider = (dependencies: any[]) => {
 
   return provider;
 };
+
