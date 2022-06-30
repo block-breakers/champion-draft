@@ -62,6 +62,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
   const [provider, setProvider] =
     useState<ethers.providers.Web3Provider | null>(null);
   const [contract, setContract] = useState<ethers.Contract | null>(null);
+  const [championHash, setChampionHash] = useState<string | null>(null);
 
   // set up provider and contract connection
   useEffect(() => {
@@ -91,7 +92,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div>Mine: </div>
-      <ChampionRegistrar provider={provider} abi={abi} network={network} />
+      <ChampionRegistrar provider={provider} abi={abi} network={network} championHash={championHash} setChampionHash={(h) => setChampionHash(h)} />
       <div>Theirs: </div>
       <ChampionViewer
         networks={networks}
