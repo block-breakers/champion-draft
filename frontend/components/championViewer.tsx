@@ -43,10 +43,7 @@ const ChampionViewer = ({ networks, provider, abi, startBattle }: ChampionViewer
   // )
 
   // parses an emitted findVAA event into a `VaaInfo`
-  const parseEvent = async (event: ethers.Event): Promise<null | ChampionData> => {
-    if (event === undefined) {
-      return null;
-    }
+  const parseEvent = async (event: ethers.Event): Promise<ChampionData> => {
     const championHash = event.args.championHash as ethers.BigNumber;
     const champion = await contract.champions(championHash);
     console.log("Got champion is: ", champion);
