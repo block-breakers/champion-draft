@@ -44,16 +44,14 @@ const ChampionRegistrar = ({
 
   // set up listener to read championHash from storage and writeback when component unloads
   useEffect(() => {
-    const result = storage.fetchChampionHash();
-    if (result !== null) {
-      setChampionHash(result);
-    }
-
-    return () => {
-      if (championHash !== null) {
-        storage.saveChampionHash(championHash);
+    if (championHash === null) {
+      const result = storage.fetchChampionHash();
+      if (result !== null) {
+        setChampionHash(result);
       }
-    };
+    } else {
+      storage.saveChampionHash(championHash);
+    }
   }, [championHash]);
 
   return (
