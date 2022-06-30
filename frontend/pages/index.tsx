@@ -7,7 +7,8 @@ import dynamic from "next/dynamic";
 import TokenSelector from "../components/tokenSelector";
 import ChampionViewer from "../components/championViewer";
 import BattleStarter from "../components/battleStarter";
-import {useWeb3Provider} from "../util/hooks";
+import { useWeb3Provider } from "../util/hooks";
+import ChampionRegistrar from "../components/championRegistrar";
 
 const MetamaskButton = dynamic(() => import("../components/metamaskButton"), {
   ssr: false,
@@ -55,11 +56,8 @@ type HomeProps = {
 };
 
 const Home: NextPage<HomeProps> = ({ networks, abi }) => {
-  console.log(abi);
-
-  const network = networks["evm0"];
-
-  // const provider = useWeb3Provider([]);
+  // TODO: this should be the network the user is currently connecting from. We need to do some extra work to be able to detect this based on the wallet they connect
+  const network = networks.evm0;
 
   const [provider, setProvider] =
     useState<ethers.providers.Web3Provider | null>(null);
@@ -77,7 +75,10 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
     setContract(new ethers.Contract(network.deployedAddress, abi, provider));
   }, []);
 
-  const [userAddress, setUserAddress] = useState<string | null>(null);
+  const startBattle = (opponentVaa: string) => {
+    // TODO: this function should start a battle with the current user's champion against the provided vaa `opponentVaa`
+    console.error("Battling not yet implemented");
+  };
 
   return (
     <div
@@ -89,37 +90,15 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
         <meta name="description" content="Champion Draft" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
-      {provider === null ? (
-        "Loading..."
-      ) : userAddress === null ? (
-        <MetamaskButton
-          provider={provider}
-          setUserAddress={(a: string) => setUserAddress(a)}
-        />
-      ) : (
-        <TokenSelector
-          provider={provider}
-          signer={provider.getSigner()}
-          network={network}
-          abi={abi}
-        />
-      )}
-      {provider !== null && contract !== null && (
-        <>
-          <ChampionViewer
-            networks={networks}
-            provider={provider}
-            abi={abi}
-          />
-          <BattleStarter
-            abi={abi}
-            network={network}
-            provider={provider}
-            contract={contract}
-          />
-        </>
-      )}
+      <div>Mine: </div>
+      <ChampionRegistrar provider={provider} abi={abi} network={network} />
+      <div>Theirs: </div>
+      <ChampionViewer
+        networks={networks}
+        provider={provider}
+        abi={abi}
+        startBattle={startBattle}
+      />
     </div>
   );
 };

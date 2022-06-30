@@ -5,7 +5,6 @@ import { randomWord } from "../util/random";
 
 type TokenSelectorProps = {
   provider: ethers.providers.Web3Provider;
-  signer: any;
   network: Network;
   abi: any;
 };
@@ -13,7 +12,6 @@ type TokenSelectorProps = {
 const TokenSelector = ({
   network,
   provider,
-  signer,
   abi,
 }: TokenSelectorProps) => {
   const [contractAddress, setContractAddress] = useState<string>("");
@@ -26,7 +24,7 @@ const TokenSelector = ({
     if (contractAddress === "") {
     }
 
-    const contract = new ethers.Contract(network.deployedAddress, abi, signer);
+    const contract = new ethers.Contract(network.deployedAddress, abi, provider.getSigner());
 
     console.log("initiating tx");
     const tx = await contract.registerNFT(

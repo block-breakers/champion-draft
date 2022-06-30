@@ -4,9 +4,14 @@ import { Network } from "../pages";
 import ChainSelector from "./chainSelector";
 
 type ChampionViewerProps = {
+  // the ethers provider that allows us to call contracts on chain
   provider: ethers.providers.Web3Provider;
+  // the list of networks that this cross-chain app is running on
   networks: Record<string, Network>;
+  // the abi for the EVM CoreGame contract
   abi: string;
+  // the callback to fire when the user chooses to start a battle
+  startBattle: (opponentVaa: string) => void;
 };
 
 type VaaInfo = {
@@ -15,15 +20,21 @@ type VaaInfo = {
   vaa: string;
 };
 
-const ChampionViewer = ({ networks, provider, abi }: ChampionViewerProps) => {
+const ChampionViewer = ({ networks, provider, abi, startBattle}: ChampionViewerProps) => {
   const [vaas, setVaas] = useState<VaaInfo[]>([]);
   const [selectedNetwork, setSelectedNetwork] = useState<Network>(
     networks[Object.keys(networks)[0]]
   );
 
-
-  const contract = useMemo(() => 
-    new ethers.Contract(selectedNetwork.deployedAddress, abi, new ethers.providers.JsonRpcProvider(selectedNetwork.rpc)), [selectedNetwork]);
+  const contract = useMemo(
+    () =>
+      new ethers.Contract(
+        selectedNetwork.deployedAddress,
+        abi,
+        new ethers.providers.JsonRpcProvider(selectedNetwork.rpc)
+      ),
+    [selectedNetwork]
+  );
 
   // parses an emitted findVAA event into a `VaaInfo`
   const parseEvent = async (event: ethers.Event): Promise<VaaInfo> => {
@@ -80,7 +91,11 @@ const ChampionViewer = ({ networks, provider, abi }: ChampionViewerProps) => {
 
   return (
     <div className="flex flex-col items-center p-4 m-8 border">
-      <ChainSelector selectedNetwork={selectedNetwork} setNetwork={(n) => setSelectedNetwork(n)} networks={networks} />
+      <ChainSelector
+        selectedNetwork={selectedNetwork}
+        setNetwork={(n) => setSelectedNetwork(n)}
+        networks={networks}
+      />
       <div>
         {vaas.map((vaa) => (
           <div key={vaa.seq} className="p-2 m-2 break-all border shadow">
