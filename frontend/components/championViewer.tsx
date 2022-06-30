@@ -2,6 +2,7 @@ import * as ethers from "ethers";
 import { useEffect, useMemo, useState } from "react";
 import { Network } from "../pages";
 import ChainSelector from "./chainSelector";
+import ChampionCard from "./championCard";
 
 type ChampionViewerProps = {
   // the ethers provider that allows us to call contracts on chain
@@ -14,14 +15,14 @@ type ChampionViewerProps = {
   startBattle: (opponentVaa: string) => void;
 };
 
-type VaaInfo = {
-  address: string;
-  seq: number;
+type ChampionData = {
+  champion: object;
   vaa: string;
 };
 
-const ChampionViewer = ({ networks, provider, abi, startBattle}: ChampionViewerProps) => {
-  const [vaas, setVaas] = useState<VaaInfo[]>([]);
+const ChampionViewer = ({ networks, provider, abi, startBattle }: ChampionViewerProps) => {
+  console.log(abi)
+  const [champions, setChampions] = useState<ChampionData[]>([]);
   const [selectedNetwork, setSelectedNetwork] = useState<Network>(
     networks[Object.keys(networks)[0]]
   );
@@ -36,17 +37,25 @@ const ChampionViewer = ({ networks, provider, abi, startBattle}: ChampionViewerP
     [selectedNetwork]
   );
 
+  // const emitterAddr = useMemo(
+  //   () => contract.getMessengerAddr(),
+  //   [contract]
+  // )
+
   // parses an emitted findVAA event into a `VaaInfo`
-  const parseEvent = async (event: ethers.Event): Promise<VaaInfo> => {
-    let emitterAddr = event.args.emitterAddr.toString();
-    const seq = event.args.seq as ethers.BigNumber;
+  const parseEvent = async (event: ethers.Event): Promise<null | ChampionData> => {
+    if (event === undefined) {
+      return null;
+    }
+    const championHash = event.args.championHash as ethers.BigNumber;
+    const champion = await contract.champions(championHash);
+    console.log("Got champion is: ", champion);
+    const seq = champion.vaaSeq as ethers.BigNumber;
 
-    // chop off `0x` and pad to 64 chars
-    emitterAddr = emitterAddr.substring(2).padStart(64, "0");
+    const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0")
 
-    let url = `http://localhost:7071/v1/signed_vaa/${
-      selectedNetwork.wormholeChainId
-    }/${emitterAddr}/${seq.toString()}`;
+    let url = `http://localhost:7071/v1/signed_vaa/${selectedNetwork.wormholeChainId
+      }/${emitterAddr}/${seq.toString()}`;
 
     console.log(url);
     let response = await fetch(url);
@@ -54,72 +63,50 @@ const ChampionViewer = ({ networks, provider, abi, startBattle}: ChampionViewerP
     let data = await response.json();
 
     return {
-      address: emitterAddr,
-      seq: seq.toNumber(),
-      vaa: data.vaaBytes,
+      champion: champion,
+      vaa: data
     };
   };
 
   // query all pre-existing findVAA events and load them into state
-  const fetchVaas = async () => {
-    let filter = contract.filters.findVAA();
+  const fetchChampions = async () => {
+    let filter = contract.filters.championRegistered();
     const events = await contract.queryFilter(filter);
     console.log("events", events);
 
-    const vaaInfos = await Promise.all(events.map(parseEvent));
+    const championInfos = await Promise.all(events.map(parseEvent));
 
-    setVaas(vaaInfos);
+    setChampions(championInfos);
   };
 
   // when this component loads, we need to fetch the initial (pre-existing) set of champions
   useEffect(() => {
-    fetchVaas();
+    fetchChampions();
   }, [contract]);
 
   useEffect(() => {
     const listener = async (_author, _old, event) => {
-      let newVaaInfo = await parseEvent(event);
-      setVaas((old) => [...old, newVaaInfo]);
+      let newChampionInfo = await parseEvent(event);
+      setChampions((old) => [...old, newChampionInfo]);
     };
 
     // attach listener to new events, but remember to unregister it when this component is unmounted
-    contract.on("findVAA", listener);
+    contract.on("championRegistered", listener);
     return () => {
-      contract.off("findVAA", listener);
+      contract.off("championRegistered", listener);
     };
   }, [contract]);
 
   return (
-    <div className="flex flex-col items-center p-4 m-8 border">
+    <div className="flex flex-col items-center p-4 m-8">
       <ChainSelector
         selectedNetwork={selectedNetwork}
         setNetwork={(n) => setSelectedNetwork(n)}
         networks={networks}
       />
-      <div>
-        {vaas.map((vaa) => (
-          <div key={vaa.seq} className="p-2 m-2 break-all border shadow">
-            <div>
-              <div className="font-bold">Address: </div>
-              {vaa.address}
-            </div>
-            <div>Sequence number: {vaa.seq.toString()}</div>
-            <div className="text-xs">Vaa: {vaa.vaa}</div>
-            <button
-              className="btn btn-blue"
-              onClick={() => {
-                navigator.permissions
-                  .query({ name: "clipboard-write" })
-                  .then((result) => {
-                    if (result.state == "granted" || result.state == "prompt") {
-                      navigator.clipboard.writeText(vaa.vaa);
-                    }
-                  });
-              }}
-            >
-              copy
-            </button>
-          </div>
+      <div className="mt-9 grid grid-cols-3 gap-4">
+        {champions.map((championData) => (
+          <ChampionCard championData={championData} isSelf={false} startBattle={startBattle} />
         ))}
       </div>
     </div>

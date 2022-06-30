@@ -25,7 +25,7 @@ const ChampionRegistrar = ({
 
   // set up listener to read championHash from storage and writeback when component unloads
   useEffect(() => {
-    const result = storage.fetchChampionHash();
+    const result = storage.getChampionHash();
     if (result !== null) {
       setChampionHash(result);
     }
