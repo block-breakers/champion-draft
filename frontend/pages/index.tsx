@@ -10,6 +10,7 @@ import BattleStarter from "../components/battleStarter";
 import { useWeb3Provider } from "../util/hooks";
 import ChampionRegistrar from "../components/championRegistrar";
 import { getUsersNetworkIdentifier } from "../util/chainConnection";
+import ChampionUpgrade from "../components/championUpgrade";
 
 const MetamaskButton = dynamic(() => import("../components/metamaskButton"), {
   ssr: false,
@@ -106,8 +107,8 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
 
   return (
     <div
-      className="flex flex-col items-center justify-center w-screen p-0 m-0 align-center"
-      style={{ minHeight: "100vw" }}
+      className="flex flex-col items-center justify-center min-w-screen p-0 m-0 align-center min-h-screen"
+      // style={{ minHeight: "100vw" }}
     >
       <Head>
         <title>Champion Draft</title>
@@ -118,21 +119,33 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
         "Loading..."
       ) : (
         <>
-          <div>Mine: </div>
-          <ChampionRegistrar
-            provider={provider}
-            abi={abi}
-            network={usersNetwork}
-            championHash={championHash}
-            setChampionHash={(h) => setChampionHash(h)}
-          />
-          <div>Theirs: </div>
-          <ChampionViewer
-            networks={networks}
-            provider={provider}
-            abi={abi}
-            startBattle={startBattle}
-          />
+          <div className="mb-10 min-w-full">
+            <div className="text-center">Mine: </div>
+            <div className="w-full flex justify-evenly items-center">
+              <ChampionRegistrar
+                provider={provider}
+                abi={abi}
+                network={usersNetwork}
+                championHash={championHash}
+                setChampionHash={(h) => setChampionHash(h)}
+              />
+              <ChampionUpgrade 
+                provider={provider}
+                abi={abi}
+                network={usersNetwork} 
+                hash={championHash} />
+            </div>
+          </div>
+          <div className="text-center">
+            Theirs: 
+            <ChampionViewer
+              networks={networks}
+              provider={provider}
+              abi={abi}
+              hash={championHash}
+              startBattle={startBattle}
+            />
+          </div>
         </>
       )}
     </div>

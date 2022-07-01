@@ -29,8 +29,9 @@ const ChampionRegistrar = ({
       network.deployedAddress,
       abi,
       provider.getSigner()
-    );
-    const champion = await contract.champions(championHash);
+      );
+      const champion = await contract.champions(championHash);
+      console.log("getting champion data", champion);
     setChampionData(champion);
   };
 
@@ -55,12 +56,13 @@ const ChampionRegistrar = ({
   }, [championHash]);
 
   return (
-    <div className="w-5/6">
-      {championHash !== null ? (
+    <div className="">
+      {championData !== null ? (
         <ChampionCard
-          champion={{ attack: 10, defense: 10, speed: 10, crit_rate: 10 }}
+          champion={championData}
           isSelf={true}
           startBattle={() => {}}
+          vaa=""
         />
       ) : (
         <div className="flex flex-col items-center justify-between w-64 px-4 py-8 rounded shadow-inner h-96 bg-neutral-300">

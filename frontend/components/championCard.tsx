@@ -57,8 +57,12 @@ const ChampionCard = ({champion, vaa, isSelf, startBattle}: ChampionCardProps) =
             <img className="w-full" src={imageURI} alt="Sunset in the mountains" />
             }
             <div className="px-6 py-4">
-                <div className="font-bold text-xl mb-2">{name}</div>
-                <p className="text-gray-700 grid grid-cols-2 gap-8 text-center">
+                
+                <span className="">
+                    <span className="truncate font-bold text-xl max-w-sm">{name}</span>
+                    <span className="text-md float-right">Lvl. {champion.level}</span>
+                </span>
+                <p className="mt-3 text-gray-700 grid grid-cols-2 gap-8 text-center">
                     <p>Attack: {champion.attack}</p>
                     <p>Defense: {champion.defense}</p>
                     <p>Speed: {champion.speed}</p>

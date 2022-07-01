@@ -11,6 +11,7 @@ type ChampionViewerProps = {
   networks: Record<string, Network>;
   // the abi for the EVM CoreGame contract
   abi: string;
+  hash: string;
   // the callback to fire when the user chooses to start a battle
   startBattle: (opponentVaa: string) => void;
 };
@@ -20,8 +21,7 @@ type ChampionData = {
   vaa: string;
 };
 
-const ChampionViewer = ({ networks, provider, abi, startBattle }: ChampionViewerProps) => {
-  console.log(abi)
+const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: ChampionViewerProps) => {
   const [champions, setChampions] = useState<ChampionData[]>([]);
   const [selectedNetwork, setSelectedNetwork] = useState<Network>(
     networks[Object.keys(networks)[0]]
@@ -54,9 +54,9 @@ const ChampionViewer = ({ networks, provider, abi, startBattle }: ChampionViewer
     let url = `http://localhost:7071/v1/signed_vaa/${selectedNetwork.wormholeChainId
       }/${emitterAddr}/${seq.toString()}`;
 
-    console.log(url);
+    // console.log(url);
     let response = await fetch(url);
-    console.log("fetched", response);
+    // console.log("fetched", response);
     let data = await response.json();
 
     return {
@@ -103,7 +103,9 @@ const ChampionViewer = ({ networks, provider, abi, startBattle }: ChampionViewer
       />
       <div className="mt-9 grid grid-cols-3 gap-4">
         {champions.map((championData) => (
-          <ChampionCard champion={championData.champion} vaa={championData.vaa} isSelf={false} startBattle={startBattle} />
+            // JSON.stringify(hash)
+            championData.champion[0].toHexString() !== hash &&
+              <ChampionCard champion={championData.champion} vaa={championData.vaa} isSelf={false} startBattle={startBattle} />
         ))}
       </div>
     </div>
