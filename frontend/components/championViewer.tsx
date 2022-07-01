@@ -43,11 +43,11 @@ const ChampionViewer = ({ networks, provider, abi, startBattle }: ChampionViewer
   // )
 
   // parses an emitted findVAA event into a `VaaInfo`
-  const parseEvent = async (event: ethers.Event): Promise<ChampionData> => {
-    const championHash = event.args.championHash as ethers.BigNumber;
+  const parseEvent = async (event: ethers.Event): Promise<null | ChampionData> => {
+    const championHash = ethers.BigNumber.from(event.args.championHash);
     const champion = await contract.champions(championHash);
-    console.log("Got champion is: ", champion);
-    const seq = champion.vaaSeq as ethers.BigNumber;
+
+    const seq = ethers.BigNumber.from(champion.vaaSeq);
 
     const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0")
 
