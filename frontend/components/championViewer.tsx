@@ -61,7 +61,7 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
 
     return {
       champion: champion,
-      vaa: data
+      vaa: data.vaaBytes
     };
   };
 
@@ -103,7 +103,6 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
       />
       <div className="mt-9 grid grid-cols-3 gap-4">
         {champions.map((championData) => (
-            // JSON.stringify(hash)
             championData.champion[0].toHexString() !== hash &&
               <ChampionCard champion={championData.champion} vaa={championData.vaa} isSelf={false} startBattle={startBattle} />
         ))}
