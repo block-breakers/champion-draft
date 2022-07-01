@@ -5,3 +5,4 @@ pub struct CounterAccount {
     pub owner: Pubkey,
     pub count: u64,
 }
+
