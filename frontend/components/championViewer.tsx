@@ -27,6 +27,8 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
     networks[Object.keys(networks)[0]]
   );
 
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const contract = useMemo(
     () =>
       new ethers.Contract(
@@ -44,6 +46,7 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
 
   // parses an emitted findVAA event into a `VaaInfo`
   const parseEvent = async (event: ethers.Event): Promise<null | ChampionData> => {
+  console.log("parse", event);
     const championHash = ethers.BigNumber.from(event.args.championHash);
     const champion = await contract.champions(championHash);
 
@@ -67,13 +70,17 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
 
   // query all pre-existing findVAA events and load them into state
   const fetchChampions = async () => {
+    setIsLoading(true);
     let filter = contract.filters.championRegistered();
     const events = await contract.queryFilter(filter);
     console.log("events", events);
 
     const championInfos = await Promise.all(events.map(parseEvent));
+    console.log("info", championInfos);
+    // console.log(ethers.BigNumber.from(championInfos[0].champion[0]).toString());
 
     setChampions(championInfos);
+    setIsLoading(false);
   };
 
   // when this component loads, we need to fetch the initial (pre-existing) set of champions
@@ -82,8 +89,8 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
   }, [contract]);
 
   useEffect(() => {
-    const listener = async (_author, _old, event) => {
-      let newChampionInfo = await parseEvent(event);
+    const listener = async (_author, event) => {
+      let newChampionInfo = await parseEvent( event);
       setChampions((old) => [...old, newChampionInfo]);
     };
 
@@ -102,7 +109,7 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
         networks={networks}
       />
       <div className="mt-9 grid grid-cols-3 gap-4">
-        {champions.map((championData) => (
+        {isLoading ? "Loading..." : champions.map((championData) => (
             championData.champion[0].toHexString() !== hash &&
               <ChampionCard champion={championData.champion} vaa={championData.vaa} isSelf={false} startBattle={startBattle} />
         ))}

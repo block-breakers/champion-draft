@@ -1,4 +1,5 @@
 import * as ethers from "ethers";
+import {useRouter} from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { Network } from "../pages";
 // import * as storage from "../util/storage";
@@ -17,7 +18,7 @@ const ChampionUpgrade = ({
   hash
 }: ChampionUpgradeProps) => {
 
-    const [upgrades, setUpgrades] = useState(Array<number>);
+    const [upgrades, setUpgrades] = useState<number[]>([]);
     const [upgradePoints, setUpgradePoints] = useState(0);
     const upgradeNames = ["Attack + 5", "Defense + 2", "Speed + 5", "Crit Rate + 8%"];
     const [disabled, setDisabled] = useState(true);
@@ -61,13 +62,18 @@ const ChampionUpgrade = ({
         setUpgrades(allUpgrades);
     }
 
+    const router = useRouter();
+
     const onUpgrade = async (choice: number) => {
         setDisabled(true);
         console.log("upgrading choice", choice+1);
-        await contract.upgrade(hash, choice+1);
+        await (await contract.upgrade(hash, choice+1)).wait();
+
         console.log("finished upgrade, getting upgrade points");
         await getUpgradePoints(hash);
         console.log("have upgrade points", upgradePoints);
+
+        router.reload();
     }
 
     if (hash == null) {
@@ -75,10 +81,10 @@ const ChampionUpgrade = ({
     }
 
     return <>
-        <div className="rounded overflow-hidden shadow-lg">
+        <div className="overflow-hidden rounded shadow-lg">
             <div className="px-6 py-4">
                 <div className="font-bold text-l">Upgrade points remaining: {upgradePoints} </div>
-                <p className="mt-3 text-gray-700 grid grid-cols-2 gap-5 text-center">
+                <p className="mt-3 text-center text-gray-700 grid grid-cols-2 gap-5">
                     {upgrades.map((up) => {
                         return <button 
                             className={disabled ? 

@@ -11,6 +11,7 @@ import { useWeb3Provider } from "../util/hooks";
 import ChampionRegistrar from "../components/championRegistrar";
 import { getUsersNetworkIdentifier } from "../util/chainConnection";
 import ChampionUpgrade from "../components/championUpgrade";
+import { useRouter } from "next/router";
 
 const MetamaskButton = dynamic(() => import("../components/metamaskButton"), {
   ssr: false,
@@ -25,7 +26,7 @@ export type Network = {
   deployedAddress: string;
   emittedVAAs: string;
 };
-type Config = {
+export type Config = {
   networks: Record<string, Network>;
   wormhole: {
     restAddress: string;
@@ -100,14 +101,25 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
     );
   }, [provider, usersNetwork]);
 
+  const router = useRouter();
   const startBattle = (opponentVaa: string) => {
-    // TODO: this function should start a battle with the current user's champion against the provided vaa `opponentVaa`
-    console.error("Battling not yet implemented");
+    if (championHash === null) {
+        return;
+    }
+
+    router.push({
+      pathname: "/battle",
+      query: {
+        hash: championHash,
+        vaa: opponentVaa.toString(),
+      },
+    });
   };
+
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-w-screen p-0 m-0 align-center min-h-screen"
+      className="flex flex-col items-center justify-center min-h-screen p-0 m-0 min-w-screen align-center"
       // style={{ minHeight: "100vw" }}
     >
       <Head>
@@ -119,9 +131,9 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
         "Loading..."
       ) : (
         <>
-          <div className="mb-10 min-w-full">
+          <div className="min-w-full mb-10">
             <div className="text-center">Mine: </div>
-            <div className="w-full flex justify-evenly items-center">
+            <div className="flex items-center w-full justify-evenly">
               <ChampionRegistrar
                 provider={provider}
                 abi={abi}

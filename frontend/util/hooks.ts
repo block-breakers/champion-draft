@@ -1,7 +1,7 @@
 import * as ethers from "ethers";
 import { useMemo } from "react";
 
-export const useWeb3Provider = (dependencies: any[]) => {
+export const useWeb3Provider = (dependencies?: any[]) => {
   if (process.browser === false) {
     return;
   }
@@ -14,4 +14,5 @@ export const useWeb3Provider = (dependencies: any[]) => {
 
   return provider;
 };
+
 
