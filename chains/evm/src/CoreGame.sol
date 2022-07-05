@@ -373,6 +373,16 @@ contract CoreGame {
         myChampion.upgradePoints -= 1;
     }
 
+    function optIn(uint256 myChampionHash) public checkRounds(ActionType.UPGRADE) {
+        Champion storage myChampion = champions[myChampionHash];
+        require(myChampion.owner == msg.sender);
+
+        myChampion.round = curRound;
+        bytes memory b = mintIdVaa(myChampion);
+        uint64 seq = messenger.sendMsg(b);
+        myChampion.vaaSeq = seq;
+    }
+
     function getUpgrades(uint256 myChampionHash) public view returns (uint8) {
         Champion memory myChampion = champions[myChampionHash];
 

@@ -6,7 +6,6 @@ import "forge-std/Test.sol";
 import "openzeppelin-contracts/contracts/token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol";
 import "src/CoreGame.sol";
 
-
 contract CoreGameTest is Test {
     CoreGame game;
     ERC721PresetMinterPauserAutoId nftCollection;
@@ -17,8 +16,14 @@ contract CoreGameTest is Test {
     function setUp() public {
         // avalanche fuji testnet
         // run test with forge test -vvvv --fork-url https://api.avax-test.network/ext/bc/C/rpc
-        game = new CoreGame(address(0x7bbcE28e64B3F8b84d876Ab298393c38ad7aac4C));
-        nftCollection = new ERC721PresetMinterPauserAutoId("bread", "B", "https://cloudflare-ipfs.com/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/");
+        game = new CoreGame(
+            address(0x7bbcE28e64B3F8b84d876Ab298393c38ad7aac4C)
+        );
+        nftCollection = new ERC721PresetMinterPauserAutoId(
+            "bread",
+            "B",
+            "https://cloudflare-ipfs.com/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/"
+        );
         admin = address(this);
         user1 = address(0x100);
         user2 = address(0x200);
@@ -36,7 +41,7 @@ contract CoreGameTest is Test {
     function testRegister() public {
         // user 1
         vm.startPrank(user1);
-        uint c1 = game.registerNFT(address(nftCollection), 0);
+        uint256 c1 = game.registerNFT(address(nftCollection), 0);
 
         // fail bad id
         vm.expectRevert("ERC721: invalid token ID");
@@ -57,10 +62,10 @@ contract CoreGameTest is Test {
     function testBattle() public {
         // user 1
         vm.prank(user1);
-        uint c1 = game.registerNFT(address(nftCollection), 2);
+        uint256 c1 = game.registerNFT(address(nftCollection), 2);
 
         vm.prank(user2);
-        uint c2 = game.registerNFT(address(nftCollection), 5);
+        uint256 c2 = game.registerNFT(address(nftCollection), 5);
 
         vm.prank(user1);
         game.nativeChainBattle(c1, c2);
@@ -74,68 +79,105 @@ contract CoreGameTest is Test {
     function testUpgrades() public {
         game.setRound(1);
         vm.startPrank(user1);
-        uint c1 = game.registerNFT(address(nftCollection), 1);
+        uint256 c1 = game.registerNFT(address(nftCollection), 1);
         console.log(c1);
 
-        ( , uint32 orig_def, , ) = game.getStats(c1);
+        (, uint32 orig_def, , ) = game.getStats(c1);
 
         uint8 upgrades = game.getUpgrades(c1);
         console.log(upgrades);
         // 2 and 4 should be valid upgrades
 
-        vm.expectRevert(bytes("You are not allowed to upgrade that stat. See getUpgrades for available upgrades."));
+        vm.expectRevert(
+            bytes(
+                "You are not allowed to upgrade that stat. See getUpgrades for available upgrades."
+            )
+        );
         game.upgrade(c1, 0);
-        vm.expectRevert(bytes("You are not allowed to upgrade that stat. See getUpgrades for available upgrades."));
+        vm.expectRevert(
+            bytes(
+                "You are not allowed to upgrade that stat. See getUpgrades for available upgrades."
+            )
+        );
         game.upgrade(c1, 1);
-        vm.expectRevert(bytes("You are not allowed to upgrade that stat. See getUpgrades for available upgrades."));
+        vm.expectRevert(
+            bytes(
+                "You are not allowed to upgrade that stat. See getUpgrades for available upgrades."
+            )
+        );
         game.upgrade(c1, 3);
         // vm.expectRevert(bytes("You are not allowed to upgrade that stat. See getUpgrades for available upgrades."));
         // game.upgrade(c1, 5);
 
         game.upgrade(c1, 2);
-        ( , uint32 def, , ) = game.getStats(c1);
+        (, uint32 def, , ) = game.getStats(c1);
         assertEq(def, orig_def + 2);
 
-        vm.expectRevert(bytes("Your champion does not have any upgrade points."));
+        vm.expectRevert(
+            bytes("Your champion does not have any upgrade points.")
+        );
         game.upgrade(c1, 4);
     }
 
     function testRounds() public {
         vm.prank(user1);
-        vm.expectRevert("You must be the owner of the contract to modify rounds!");
+        vm.expectRevert(
+            "You must be the owner of the contract to modify rounds!"
+        );
         game.setRoundStart(2657034676);
         vm.prank(user1);
-        vm.expectRevert("You must be the owner of the contract to modify rounds!");
+        vm.expectRevert(
+            "You must be the owner of the contract to modify rounds!"
+        );
         game.setRound(2);
 
         // round starts years from now
         game.setRoundStart(2657034676);
 
         vm.prank(user1);
-        vm.expectRevert("You are not allowed to perform actions outside the play time.");
+        vm.expectRevert(
+            "You are not allowed to perform actions outside the play time."
+        );
         game.registerNFT(address(nftCollection), 2);
 
         game.setRound(0);
-        
-        vm.prank(user1);
-        uint c1 = game.registerNFT(address(nftCollection), 1);
-        vm.prank(user2);
-        uint c2 = game.registerNFT(address(nftCollection), 5);
 
         vm.prank(user1);
-        vm.expectRevert("You are not allowed to upgrade champions during battle round.");
-        game.upgrade(c1, 1);
+        uint256 c1 = game.registerNFT(address(nftCollection), 1);
+        vm.prank(user2);
+        uint256 c2 = game.registerNFT(address(nftCollection), 5);
+
         vm.prank(user1);
-        vm.expectRevert("You are not allowed to upgrade champions during battle round.");
+        vm.expectRevert(
+            "You are not allowed to upgrade champions during battle round."
+        );
+        game.upgrade(c1, 1);
+
+        vm.prank(user1);
+        vm.expectRevert(
+            "You are not allowed to upgrade champions during battle round."
+        );
         game.claimXP(c1, "agadgsf");
+
+        vm.prank(user1);
+        vm.expectRevert(
+            "You are not allowed to upgrade champions during battle round."
+        );
+        game.optIn(c1);
+
 
         game.setRound(1);
 
+
         vm.prank(user1);
-        vm.expectRevert("You are not allowed to battle champions during upgrade round.");
+        vm.expectRevert(
+            "You are not allowed to battle champions during upgrade round."
+        );
         game.nativeChainBattle(c1, c2);
         vm.prank(user1);
-        vm.expectRevert("You are not allowed to battle champions during upgrade round.");
+        vm.expectRevert(
+            "You are not allowed to battle champions during upgrade round."
+        );
         game.crossChainBattle(c1, "sfasdfsad");
 
         // vm.expectRevert("");
