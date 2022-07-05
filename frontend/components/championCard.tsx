@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type ChampionCardProps = {
     // the ethers provider that allows us to call contracts on chain

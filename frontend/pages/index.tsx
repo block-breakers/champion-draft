@@ -2,20 +2,12 @@ import type { GetStaticProps, NextPage } from "next";
 import Head from "next/head";
 import { readFileSync } from "fs";
 import * as ethers from "ethers";
-import { useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
-import TokenSelector from "../components/tokenSelector";
+import { useEffect, useState } from "react";
 import ChampionViewer from "../components/championViewer";
-import BattleStarter from "../components/battleStarter";
-import { useWeb3Provider } from "../util/hooks";
 import ChampionRegistrar from "../components/championRegistrar";
 import { getUsersNetworkIdentifier } from "../util/chainConnection";
 import ChampionUpgrade from "../components/championUpgrade";
 import { useRouter } from "next/router";
-
-const MetamaskButton = dynamic(() => import("../components/metamaskButton"), {
-  ssr: false,
-});
 
 export type Network = {
   type: string;

@@ -8,7 +8,7 @@ type ChampionUpgradeProps = {
   provider: ethers.providers.Web3Provider;
   network: Network;
   abi: any;
-  hash: string;
+  hash: string | null;
 };
 
 const ChampionUpgrade = ({

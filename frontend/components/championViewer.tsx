@@ -11,7 +11,7 @@ type ChampionViewerProps = {
   networks: Record<string, Network>;
   // the abi for the EVM CoreGame contract
   abi: string;
-  hash: string;
+  hash: null | string;
   // the callback to fire when the user chooses to start a battle
   startBattle: (opponentVaa: string) => void;
 };
@@ -89,7 +89,7 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
   }, [contract]);
 
   useEffect(() => {
-    const listener = async (_author, event) => {
+    const listener: ethers.providers.Listener = async (_author, event ) => {
       let newChampionInfo = await parseEvent( event);
       setChampions((old) => [...old, newChampionInfo]);
     };
@@ -110,7 +110,7 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
       />
       <div className="mt-9 grid grid-cols-3 gap-4">
         {isLoading ? "Loading..." : champions.map((championData) => (
-            championData.champion[0].toHexString() !== hash &&
+            (hash === null || championData.champion[0].toHexString() !== hash) &&
               <ChampionCard champion={championData.champion} vaa={championData.vaa} isSelf={false} startBattle={startBattle} />
         ))}
       </div>
