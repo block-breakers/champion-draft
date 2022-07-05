@@ -67,23 +67,13 @@ const ChampionUpgrade = ({
     const onUpgrade = async (choice: number) => {
         setDisabled(true);
         console.log("upgrading choice", choice+1);
-        try {
-            await (await contract.upgrade(hash, choice+1)).wait();
-        } catch (e) {
-            window.alert("Can not upgrade during battle round!");
-            setDisabled(false);
-        }
+        await (await contract.upgrade(hash, choice+1)).wait();
 
         console.log("finished upgrade, getting upgrade points");
         await getUpgradePoints(hash);
         console.log("have upgrade points", upgradePoints);
 
         router.reload();
-    }
-
-    const onOptIn = async () => {
-        await contract.optIn(hash);
-
     }
 
     if (hash == null) {
@@ -106,15 +96,6 @@ const ChampionUpgrade = ({
                                 {upgradeNames[up]}
                             </button>
                     })}
-                    <button 
-                            className={upgradePoints != 0 ? 
-                                "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed" 
-                                : "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded"}
-                            disabled={upgradePoints != 0}
-                            onClick={()=>onOptIn()}
-                            >
-                                Opt In for Next Round
-                            </button>
                 </p>
             </div>
         </div>

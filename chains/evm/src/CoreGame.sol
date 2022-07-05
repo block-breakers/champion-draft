@@ -35,7 +35,7 @@ contract CoreGame {
     // current max turns allowed: 15
     uint256 constant TURNS = 10;
     // round length is 5 minutes
-    uint256 constant ROUND_LENGTH = 300;
+    uint256 constant ROUND_LENGTH = 60;
     uint256 nonce = 0;
     // mapping from champion hash to champion
     mapping(uint256 => Champion) public champions;
@@ -377,7 +377,7 @@ contract CoreGame {
         Champion storage myChampion = champions[myChampionHash];
         require(myChampion.owner == msg.sender);
 
-        myChampion.round = curRound+1;
+        myChampion.round = curRound;
         bytes memory b = mintIdVaa(myChampion);
         uint64 seq = messenger.sendMsg(b);
         myChampion.vaaSeq = seq;
@@ -413,14 +413,6 @@ contract CoreGame {
     {
         Champion memory me = champions[myChampionHash];
         return (me.attack, me.defense, me.speed, me.crit_rate);
-    }
-
-    function getTimeLeftInRound() public view returns (uint32) {
-        uint timePassed = block.timestamp - roundStart;
-        if (timePassed >= ROUND_LENGTH) {
-            return 0;
-        }
-        return uint32(ROUND_LENGTH - timePassed);
     }
 
     /**

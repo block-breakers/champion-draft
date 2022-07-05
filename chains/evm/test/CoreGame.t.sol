@@ -180,6 +180,6 @@ contract CoreGameTest is Test {
         );
         game.crossChainBattle(c1, "sfasdfsad");
 
-        game.getTimeLeftInRound();
+        // vm.expectRevert("");
     }
 }
