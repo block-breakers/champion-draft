@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "openzeppelin-contracts/contracts/token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol";
 import "src/CoreGame.sol";
 
+
 contract CoreGameTest is Test {
     CoreGame game;
     ERC721PresetMinterPauserAutoId nftCollection;
@@ -24,52 +25,54 @@ contract CoreGameTest is Test {
 
         nftCollection.mint(user1);
         nftCollection.mint(user1);
+        nftCollection.mint(user1);
+        nftCollection.mint(user1);
+        nftCollection.mint(user2);
+        nftCollection.mint(user2);
         nftCollection.mint(user2);
         nftCollection.mint(user2);
     }
 
-    // function testRegister() public {
-    //     // user 1
-    //     vm.prank(user1);
-    //     address c1 = game.registerNFT(address(nftCollection), 0, "", "first");
+    function testRegister() public {
+        // user 1
+        vm.startPrank(user1);
+        uint c1 = game.registerNFT(address(nftCollection), 0);
 
-    //     ( , , string memory name, , , , , , ) = game.champions(c1);
+        // fail bad id
+        vm.expectRevert("ERC721: invalid token ID");
+        game.registerNFT(address(nftCollection), 200);
+        vm.expectRevert("You do not own this NFT");
+        game.registerNFT(address(nftCollection), 5);
 
-    //     assertEq(name, "first");
-    // }
+        // fail double register
+        vm.expectRevert("NFT is already registered");
+        game.registerNFT(address(nftCollection), 0);
 
-    // function testFailRegister() public {
-    //     // user 1
-    //     vm.prank(user1);
-    //     game.registerNFT(address(nftCollection), 2, "", "first");
-    // }
-    // function testFailDoubleRegister() public {
-    //     // user 1
-    //     vm.prank(user1);
-    //     game.registerNFT(address(nftCollection), 0, "", "first");
-    //     vm.prank(user1);
-    //     game.registerNFT(address(nftCollection), 0, "", "first");
-    // }
+        // ( , address owner, , , , , , , , , , ) = game.champions(c1);
 
-    // function testFailVaa() public {
-    //     bytes memory bad = "aoihgasfasghafdhadf";
+        // assertEq(owner, user1);
+        // assertEq(uri, "https://cloudflare-ipfs.com/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/0");
+    }
 
-    //     game.crossChainBattle(0, bad);
-    // }
+    function testBattle() public {
+        // user 1
+        vm.prank(user1);
+        uint c1 = game.registerNFT(address(nftCollection), 2);
 
-    // function testBattle() public {
-    //     // user 1
-    //     vm.prank(user1);
-    //     uint c1 = game.registerNFT(address(nftCollection), 1);
+        vm.prank(user2);
+        uint c2 = game.registerNFT(address(nftCollection), 5);
 
-    //     vm.prank(user2);
-    //     uint c2 = game.registerNFT(address(nftCollection), 3);
+        vm.prank(user1);
+        game.nativeChainBattle(c1, c2);
 
-    //     vm.prank(user1);
-    //     game.nativeChainBattle(c1, c2);
-    // }
+        // test that a bad vaa fails
+        bytes memory bad = "aoihgasfasghafdhadf";
+        vm.expectRevert("Unable to receive encoded message vaa.");
+        game.crossChainBattle(0, bad);
+    }
 
     function testUpgrades() public {
+        game.setRound(1);
         vm.startPrank(user1);
         uint c1 = game.registerNFT(address(nftCollection), 1);
         console.log(c1);
@@ -95,5 +98,46 @@ contract CoreGameTest is Test {
 
         vm.expectRevert(bytes("Your champion does not have any upgrade points."));
         game.upgrade(c1, 4);
+    }
+
+    function testRounds() public {
+        vm.prank(user1);
+        vm.expectRevert("You must be the owner of the contract to modify rounds!");
+        game.setRoundStart(2657034676);
+        vm.prank(user1);
+        vm.expectRevert("You must be the owner of the contract to modify rounds!");
+        game.setRound(2);
+
+        // round starts years from now
+        game.setRoundStart(2657034676);
+
+        vm.prank(user1);
+        vm.expectRevert("You are not allowed to perform actions outside the play time.");
+        game.registerNFT(address(nftCollection), 2);
+
+        game.setRound(0);
+        
+        vm.prank(user1);
+        uint c1 = game.registerNFT(address(nftCollection), 1);
+        vm.prank(user2);
+        uint c2 = game.registerNFT(address(nftCollection), 5);
+
+        vm.prank(user1);
+        vm.expectRevert("You are not allowed to upgrade champions during battle round.");
+        game.upgrade(c1, 1);
+        vm.prank(user1);
+        vm.expectRevert("You are not allowed to upgrade champions during battle round.");
+        game.claimXP(c1, "agadgsf");
+
+        game.setRound(1);
+
+        vm.prank(user1);
+        vm.expectRevert("You are not allowed to battle champions during upgrade round.");
+        game.nativeChainBattle(c1, c2);
+        vm.prank(user1);
+        vm.expectRevert("You are not allowed to battle champions during upgrade round.");
+        game.crossChainBattle(c1, "sfasdfsad");
+
+        // vm.expectRevert("");
     }
 }
