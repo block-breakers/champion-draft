@@ -8,6 +8,7 @@ import ChampionRegistrar from "../components/championRegistrar";
 import { getUsersNetworkIdentifier } from "../util/chainConnection";
 import ChampionUpgrade from "../components/championUpgrade";
 import { useRouter } from "next/router";
+import RoundsView from "../components/roundsView";
 
 export type Network = {
   type: string;
@@ -124,6 +125,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
       ) : (
         <>
           <div className="min-w-full mb-10">
+          <RoundsView contract={contract} />
             <div className="text-center">Mine: </div>
             <div className="flex items-center w-full justify-evenly">
               <ChampionRegistrar

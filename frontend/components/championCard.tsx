@@ -54,7 +54,7 @@ const ChampionCard = ({champion, vaa, isSelf, startBattle}: ChampionCardProps) =
         // <></>
         <div className="max-w-sm rounded overflow-hidden shadow-lg">
             {imageURI && 
-            <img className="w-full" src={imageURI} alt="Sunset in the mountains" />
+            <img className="w-full" src={imageURI} />
             }
             <div className="px-6 py-4">
                 
@@ -67,6 +67,7 @@ const ChampionCard = ({champion, vaa, isSelf, startBattle}: ChampionCardProps) =
                     <p>Defense: {champion.defense}</p>
                     <p>Speed: {champion.speed}</p>
                     <p>Crit Rate: {champion.crit_rate}%</p>
+                    <p className="col-span-2">Can battle at round {champion.round}</p>
                 </p>
             </div>
             {!isSelf && 
