@@ -2,11 +2,11 @@ import { Network } from "../pages";
 
 type ChainSelectorProps = {
   networks: Record<string, Network>;
-  setNetwork: (_: Network) => void;
-  selectedNetwork: Network
+  setNetwork: (_: string) => void;
+  selectedNetworkName: string
 };
 
-const ChainSelector = ({ networks, setNetwork , selectedNetwork}: ChainSelectorProps) => {
+const ChainSelector = ({ networks, setNetwork , selectedNetworkName}: ChainSelectorProps) => {
 
   return (
     <span>
@@ -14,9 +14,9 @@ const ChainSelector = ({ networks, setNetwork , selectedNetwork}: ChainSelectorP
         <button
           className={
             "mx-4 btn btn-blue" +
-            (networks[key] === selectedNetwork ? " bg-blue-900" : "")
+            (key === selectedNetworkName ? " bg-blue-900" : "")
           }
-          onClick={() => setNetwork(networks[key])}
+          onClick={() => setNetwork(key)}
         >
           {key}
         </button>

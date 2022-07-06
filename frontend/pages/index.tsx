@@ -24,6 +24,10 @@ export type Config = {
   wormhole: {
     restAddress: string;
   };
+  server: {
+    baseURL: string;
+    redis: Object;
+  }
 };
 
 export const getStaticProps: GetStaticProps = async () => {
@@ -32,6 +36,7 @@ export const getStaticProps: GetStaticProps = async () => {
   ) as Config;
 
   let networks = config.networks;
+  let serverBaseURL = config.server.baseURL;
 
   let abi = JSON.parse(
     readFileSync("../chains/evm/out/CoreGame.sol/CoreGame.json").toString()
@@ -41,7 +46,8 @@ export const getStaticProps: GetStaticProps = async () => {
   return {
     props: {
       networks: networks,
-      abi,
+      abi: abi,
+      serverBaseURL: serverBaseURL
     },
   };
 };
@@ -49,9 +55,10 @@ export const getStaticProps: GetStaticProps = async () => {
 type HomeProps = {
   networks: Record<string, Network>;
   abi: any;
+  serverBaseURL: string;
 };
 
-const Home: NextPage<HomeProps> = ({ networks, abi }) => {
+const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
   const [championHash, setChampionHash] = useState<string | null>(null);
 
   // set up provider
@@ -148,6 +155,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi }) => {
               networks={networks}
               provider={provider}
               abi={abi}
+              serverBaseURL={serverBaseURL}
               hash={championHash}
               startBattle={startBattle}
             />

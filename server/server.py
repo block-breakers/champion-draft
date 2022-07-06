@@ -1,12 +1,14 @@
 from flask import Flask
 from flask import request
 from flask import jsonify
+from flask_cors import CORS
 import redis
 import json
 import asyncio
 from listener import EVMListener
 
 app = Flask(__name__)
+CORS(app)
 
 f = open("../xdapp.config.json")
 config = json.load(f)
@@ -15,7 +17,8 @@ abiPath = "../chains/evm/out/CoreGame.sol/CoreGame.json"
 abiFile = open(abiPath)
 abi = json.load(abiFile)["abi"]
 
-redisDatabase = redis.Redis(host='localhost', port=6379)
+redisConfig = config["server"]["redis"]
+redisDatabase = redis.Redis(host=redisConfig["host"], port=redisConfig["port"])
 
 chainListeners = {}
 
@@ -41,7 +44,7 @@ def healthz():
 @app.route("/champions")
 def champions():
     chainName = request.args.get('chain')
-    prevListLength = request.args.get('idx')
+    prevListLength = int(request.args.get('idx'))
     if chainName not in chainListeners:
         return jsonify([])
     
