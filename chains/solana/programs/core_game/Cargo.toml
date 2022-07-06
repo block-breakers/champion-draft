@@ -1,12 +1,12 @@
 [package]
-name = "solana"
+name = "core-game"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "solana"
+name = "core_game"
 
 [features]
 no-entrypoint = []
@@ -20,3 +20,6 @@ overflow-checks = true
 
 [dependencies]
 anchor-lang = "0.24.2"
+anchor-spl = "0.24.2"
+wormhole-solana-sdk = { git = "https://github.com/spacemandev-git/wormhole-solana-sdk", features=["devnet"]}
+
