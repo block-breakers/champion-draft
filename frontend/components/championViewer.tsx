@@ -11,6 +11,7 @@ type ChampionViewerProps = {
   networks: Record<string, Network>;
   // the abi for the EVM CoreGame contract
   abi: string;
+  serverBaseURL: string;
   hash: null | string;
   // the callback to fire when the user chooses to start a battle
   startBattle: (opponentVaa: string) => void;
@@ -21,11 +22,15 @@ type ChampionData = {
   vaa: string;
 };
 
-const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: ChampionViewerProps) => {
-  const [champions, setChampions] = useState<ChampionData[]>([]);
+const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, startBattle }: ChampionViewerProps) => {
+  const [champions, setChampions] = useState<object[]>([]);
   const [selectedNetwork, setSelectedNetwork] = useState<Network>(
     networks[Object.keys(networks)[0]]
   );
+  const [selectedNetworkName, setSelectedNetworkName] = useState<string>(
+    Object.keys(networks)[0]
+  );
+  const [lastChampionIdx, setLastChampionIdx] = useState(0);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -39,47 +44,52 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
     [selectedNetwork]
   );
 
-  // const emitterAddr = useMemo(
-  //   () => contract.getMessengerAddr(),
-  //   [contract]
-  // )
-
   // parses an emitted findVAA event into a `VaaInfo`
-  const parseEvent = async (event: ethers.Event): Promise<null | ChampionData> => {
-  console.log("parse", event);
-    const championHash = ethers.BigNumber.from(event.args.championHash);
-    const champion = await contract.champions(championHash);
-
-    const seq = ethers.BigNumber.from(champion.vaaSeq);
-
-    const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0")
-
-    let url = `http://localhost:7071/v1/signed_vaa/${selectedNetwork.wormholeChainId
-      }/${emitterAddr}/${seq.toString()}`;
-
-    // console.log(url);
-    let response = await fetch(url);
-    // console.log("fetched", response);
-    let data = await response.json();
-
-    return {
-      champion: champion,
-      vaa: data.vaaBytes
+  // TODO: make the 2 fetches occur in parallel
+  const getChampion = async (hash: string): Promise<null | ChampionData> => {
+    console.log("get champion", hash);
+      const champion = await contract.champions(hash);
+  
+      const seq = ethers.BigNumber.from(champion.vaaSeq);
+  
+      const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0")
+  
+      let url = `http://localhost:7071/v1/signed_vaa/${selectedNetwork.wormholeChainId
+        }/${emitterAddr}/${seq.toString()}`;
+  
+      // console.log(url);
+      let response = await fetch(url);
+      // console.log("fetched", response);
+      let data = await response.json();
+  
+      return {
+        champion: champion,
+        vaa: data.vaaBytes
+      };
     };
-  };
 
   // query all pre-existing findVAA events and load them into state
   const fetchChampions = async () => {
     setIsLoading(true);
-    let filter = contract.filters.championRegistered();
-    const events = await contract.queryFilter(filter);
-    console.log("events", events);
 
-    const championInfos = await Promise.all(events.map(parseEvent));
-    console.log("info", championInfos);
-    // console.log(ethers.BigNumber.from(championInfos[0].champion[0]).toString());
+    let url = new URL(serverBaseURL + "champions");
+    url.searchParams.append("chain", selectedNetworkName);
+    url.searchParams.append("idx", lastChampionIdx.toString());
 
-    setChampions(championInfos);
+    console.log(url.toString())
+
+    const res = await fetch(url.toString());
+
+    console.log("fetching server with ", selectedNetworkName, "and", lastChampionIdx, " got result ", res)
+
+    if (res.status == 200) {
+      let data = await res.json();
+      console.log("data is: ", data);
+      setLastChampionIdx(data.length)
+      const championInfos = await Promise.all(data.map(getChampion));
+      console.log("info", championInfos);
+      setChampions(champions => [...champions, ...championInfos]);
+    }
     setIsLoading(false);
   };
 
@@ -89,8 +99,8 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
   }, [contract]);
 
   useEffect(() => {
-    const listener: ethers.providers.Listener = async (_author, event ) => {
-      let newChampionInfo = await parseEvent( event);
+    const listener: ethers.providers.Listener = async (_author, event) => {
+      let newChampionInfo = await parseEvent(event);
       setChampions((old) => [...old, newChampionInfo]);
     };
 
@@ -104,14 +114,21 @@ const ChampionViewer = ({ networks, provider, abi, hash, startBattle }: Champion
   return (
     <div className="flex flex-col items-center p-4 m-8">
       <ChainSelector
-        selectedNetwork={selectedNetwork}
-        setNetwork={(n) => setSelectedNetwork(n)}
+        selectedNetworkName={selectedNetworkName}
+        setNetwork={(key: string) => {
+          setSelectedNetwork(networks[key]);
+          setSelectedNetworkName(key);
+        }}
         networks={networks}
       />
       <div className="mt-9 grid grid-cols-3 gap-4">
         {isLoading ? "Loading..." : champions.map((championData) => (
-            (hash === null || championData.champion[0].toHexString() !== hash) &&
-              <ChampionCard champion={championData.champion} vaa={championData.vaa} isSelf={false} startBattle={startBattle} />
+          (hash === null || championData.champion[0].toHexString() !== hash) &&
+          <ChampionCard
+            champion={championData.champion}
+            vaa={championData.vaa}
+            isSelf={false}
+            startBattle={startBattle} />
         ))}
       </div>
     </div>
