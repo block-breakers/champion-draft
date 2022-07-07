@@ -14,7 +14,8 @@ type ChampionViewerProps = {
   serverBaseURL: string;
   hash: null | string;
   // the callback to fire when the user chooses to start a battle
-  startBattle: (opponentVaa: string) => void;
+  buttonOnClick: (opponentVaa: string, championHash: string) => void;
+  buttonText: string;
 };
 
 type ChampionData = {
@@ -22,7 +23,7 @@ type ChampionData = {
   vaa: string;
 };
 
-const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, startBattle }: ChampionViewerProps) => {
+const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOnClick, buttonText}: ChampionViewerProps) => {
   const [champions, setChampions] = useState<object[]>([]);
   const [selectedNetwork, setSelectedNetwork] = useState<Network>(
     networks[Object.keys(networks)[0]]
@@ -128,7 +129,9 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, startBat
             champion={championData.champion}
             vaa={championData.vaa}
             isSelf={false}
-            startBattle={startBattle} />
+            buttonOnClick={buttonOnClick}
+            buttonText={buttonText}
+          />
         ))}
       </div>
     </div>

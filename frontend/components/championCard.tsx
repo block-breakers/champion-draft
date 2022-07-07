@@ -6,10 +6,11 @@ type ChampionCardProps = {
     vaa: string;
     isSelf: boolean;
     // the callback to fire when the user chooses to start a battle
-    startBattle: (opponentVaa: string) => void;
+    buttonOnClick: (opponentVaa: string, championHash: string) => void;
+    buttonText: string
 };
 
-const ChampionCard = ({champion, vaa, isSelf, startBattle}: ChampionCardProps) => {
+const ChampionCard = ({champion, vaa, isSelf, onClick, buttonText}: ChampionCardProps) => {
     if (champion == null) {
         return <></>;
     }
@@ -52,30 +53,31 @@ const ChampionCard = ({champion, vaa, isSelf, startBattle}: ChampionCardProps) =
         //     </button>
         // </div>
         // <></>
-        <div className="max-w-sm rounded overflow-hidden shadow-lg">
+        <div className="max-w-sm overflow-hidden rounded shadow-lg">
             {imageURI && 
             <img className="w-full" src={imageURI} />
             }
             <div className="px-6 py-4">
                 
                 <span className="">
-                    <span className="truncate font-bold text-xl max-w-sm">{name}</span>
-                    <span className="text-md float-right">Lvl. {champion.level}</span>
+                    <span className="max-w-sm text-xl font-bold truncate">{name}</span>
+                    <span className="float-right text-md">Lvl. {champion.stats.level}</span>
                 </span>
-                <p className="mt-3 text-gray-700 grid grid-cols-2 gap-8 text-center">
-                    <p>Attack: {champion.attack}</p>
-                    <p>Defense: {champion.defense}</p>
-                    <p>Speed: {champion.speed}</p>
-                    <p>Crit Rate: {champion.crit_rate}%</p>
+                <p className="mt-3 text-center text-gray-700 grid grid-cols-2 gap-8">
+                    <p>Attack: {champion.stats.attack}</p>
+                    <p>Defense: {champion.stats.defense}</p>
+                    <p>Speed: {champion.stats.speed}</p>
+                    <p>Crit Rate: {champion.stats.crit_rate}%</p>
                     <p className="col-span-2">Can battle at round {champion.round}</p>
                 </p>
             </div>
             {!isSelf && 
                 <div className="px-6 pb-6 text-center">
                 <button 
-                    className="btn bg-red-300 hover:bg-red-400"
-                    onClick={() => startBattle(vaa)}>
-                                    Battle!</button>
+                    className="bg-red-300 btn hover:bg-red-400"
+                    onClick={() => onClick(vaa, champion.championHash)}>
+                    {buttonText}
+                </button>
                 </div>
             }
         </div>

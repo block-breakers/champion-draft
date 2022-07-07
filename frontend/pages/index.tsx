@@ -27,7 +27,7 @@ export type Config = {
   server: {
     baseURL: string;
     redis: Object;
-  }
+  };
 };
 
 export const getStaticProps: GetStaticProps = async () => {
@@ -47,10 +47,12 @@ export const getStaticProps: GetStaticProps = async () => {
     props: {
       networks: networks,
       abi: abi,
-      serverBaseURL: serverBaseURL
+      serverBaseURL: serverBaseURL,
     },
   };
 };
+
+export type PlayerKind = "fighter" | "audience" | "unjoined";
 
 type HomeProps = {
   networks: Record<string, Network>;
@@ -60,6 +62,8 @@ type HomeProps = {
 
 const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
   const [championHash, setChampionHash] = useState<string | null>(null);
+
+  const [playerKind, setPlayerKind] = useState<PlayerKind>("unjoined");
 
   // set up provider
   const [provider, setProvider] =
@@ -102,9 +106,9 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
   }, [provider, usersNetwork]);
 
   const router = useRouter();
-  const startBattle = (opponentVaa: string) => {
+  const startBattle = (opponentVaa: string, _: string) => {
     if (championHash === null) {
-        return;
+      return;
     }
 
     router.push({
@@ -116,6 +120,12 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
     });
   };
 
+  const draftChampion = (_: string, championHash: string) => {
+    if (contract === null) {
+      return;
+    }
+    contract.registerAudienceMember(championHash);
+  };
 
   return (
     <div
@@ -132,33 +142,75 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       ) : (
         <>
           <div className="min-w-full mb-10">
-          <RoundsView contract={contract} />
-            <div className="text-center">Mine: </div>
-            <div className="flex items-center w-full justify-evenly">
-              <ChampionRegistrar
-                provider={provider}
-                abi={abi}
-                network={usersNetwork}
-                championHash={championHash}
-                setChampionHash={(h) => setChampionHash(h)}
-              />
-              <ChampionUpgrade 
-                provider={provider}
-                abi={abi}
-                network={usersNetwork} 
-                hash={championHash} />
+            <RoundsView contract={contract} />
+            <div className="flex flex-col items-center w-full justify-evenly">
+              {playerKind === "unjoined" ? (
+                <div className="flex flex-col space-y-4">
+                  <button
+                    className="btn btn-blue"
+                    onClick={() => setPlayerKind("fighter")}
+                  >
+                    Start Playing
+                  </button>
+                  <button
+                    className="btn btn-blue"
+                    onClick={() => setPlayerKind("audience")}
+                  >
+                    Join the audience
+                  </button>
+                </div>
+              ) : playerKind === "audience" ? (
+                <></>
+              ) : (
+                <>
+                  <div className="text-center">Mine: </div>
+                  <ChampionRegistrar
+                    provider={provider}
+                    abi={abi}
+                    network={usersNetwork}
+                    championHash={championHash}
+                    setChampionHash={(h) => setChampionHash(h)}
+                  />
+                  <ChampionUpgrade
+                    provider={provider}
+                    abi={abi}
+                    network={usersNetwork}
+                    hash={championHash}
+                  />
+                </>
+              )}
             </div>
           </div>
           <div className="text-center">
-            Theirs: 
-            <ChampionViewer
-              networks={networks}
-              provider={provider}
-              abi={abi}
-              serverBaseURL={serverBaseURL}
-              hash={championHash}
-              startBattle={startBattle}
-            />
+            {playerKind === "unjoined" ? (
+              <></>
+            ) : playerKind === "audience" ? (
+              <>
+                Champions:
+                <ChampionViewer
+                  networks={networks}
+                  provider={provider}
+                  abi={abi}
+                  serverBaseURL={serverBaseURL}
+                  hash={championHash}
+                  buttonText="Draft"
+                  buttonOnClick={draftChampion}
+                />
+              </>
+            ) : (
+              <>
+                Theirs:
+                <ChampionViewer
+                  networks={networks}
+                  provider={provider}
+                  abi={abi}
+                  serverBaseURL={serverBaseURL}
+                  hash={championHash}
+                  buttonText="Battle!"
+                  buttonOnClick={startBattle}
+                />
+              </>
+            )}
           </div>
         </>
       )}
