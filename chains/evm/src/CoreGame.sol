@@ -7,10 +7,7 @@ import "./Messenger.sol";
 
 import "forge-std/console.sol";
 
-struct Champion {
-    uint256 championHash;
-    address owner;
-    string uri;
+struct ChampionStats {
     uint32 attack;
     uint32 defense;
     uint32 speed;
@@ -18,8 +15,23 @@ struct Champion {
     uint32 level;
     uint32 xp;
     uint32 upgradePoints;
+}
+
+struct AudienceVotes {
+    uint32 attack;
+    uint32 defense;
+    uint32 speed;
+    uint32 crit_rate;
+}
+
+struct Champion {
+    uint256 championHash;
+    address owner;
+    string uri;
     uint64 vaaSeq;
     uint32 round;
+    ChampionStats stats;
+    AudienceVotes votes;
 }
 
 struct BattleOutcome {
@@ -28,6 +40,7 @@ struct BattleOutcome {
     uint256 winner;
     uint32 winnerXP;
     uint32 loserXP;
+    uint timestamp;
     // timestamp
 }
 
@@ -157,18 +170,22 @@ contract CoreGame {
         champion.championHash = uint256(myChampionHash);
         champion.owner = msg.sender;
         champion.uri = _uri;
-        champion.attack = byteToUint32(myChampionHash[31] & 0x0F) / 2 + 5;
-        champion.defense =
+        champion.round = curRound;
+
+        ChampionStats memory championStats;
+        championStats.attack = byteToUint32(myChampionHash[31] & 0x0F) / 2 + 5;
+        championStats.defense =
             byteToUint32((myChampionHash[31] >> 4) & 0x0F) /
             5 +
             1;
-        champion.speed = byteToUint32(myChampionHash[30] & 0x0F) + 1;
-        champion.crit_rate =
+        championStats.speed = byteToUint32(myChampionHash[30] & 0x0F) + 1;
+        championStats.crit_rate =
             byteToUint32((myChampionHash[30] >> 4) & 0x0F) +
             10;
-        champion.level = 1;
-        champion.upgradePoints = 1;
-        champion.round = curRound;
+        championStats.level = 1;
+        championStats.upgradePoints = 1;
+
+        champion.stats = championStats;
 
         bytes memory b = mintIdVaa(champion);
         // emit IdVAA(b);
@@ -216,13 +233,15 @@ contract CoreGame {
         Champion memory b,
         bytes32 random
     ) private {
+        ChampionStats memory aStats = a.stats;
+        ChampionStats memory bStats = b.stats;
         if (a.round + 1 < curRound || b.round + 1 < curRound) {
             // trying to fight an outdated champion
             revert("Not allowed to fight an outdated champion");
         }
         if (
-            (a.level > b.level && a.level - b.level > 3) ||
-            (b.level > a.level && b.level - a.level > 3)
+            (aStats.level > bStats.level && aStats.level - bStats.level > 3) ||
+            (bStats.level > aStats.level && bStats.level - aStats.level > 3)
         ) {
             revert(
                 "Not allowed to battle champion with greater than 3 level difference."
@@ -233,10 +252,10 @@ contract CoreGame {
         uint256 damageByB;
 
         // idea: use 1 byte (0-255) as random. determine the threshold for event to trigger
-        uint32 a_threshold_to_hit = (a.speed * 0xff) / (a.speed + b.speed);
+        uint32 a_threshold_to_hit = (aStats.speed * 0xff) / (aStats.speed + bStats.speed);
 
-        uint32 a_threshold_to_crit = (a.speed * 0xff) / 100;
-        uint32 b_threshold_to_crit = (b.speed * 0xff) / 100;
+        uint32 a_threshold_to_crit = (aStats.speed * 0xff) / 100;
+        uint32 b_threshold_to_crit = (bStats.speed * 0xff) / 100;
 
         for (uint256 i = 0; i < TURNS; i++) {
             if (byteToUint32(random[i]) < a_threshold_to_hit) {
@@ -248,11 +267,11 @@ contract CoreGame {
                     257;
                 if (byteToUint32(random[31 - i]) < a_threshold_to_crit) {
                     damage =
-                        (a.attack * 2 * damageMultiplier) /
-                        b.defense /
+                        (aStats.attack * 2 * damageMultiplier) /
+                        bStats.defense /
                         512;
                 } else {
-                    damage = (a.attack * damageMultiplier) / b.defense / 512;
+                    damage = (aStats.attack * damageMultiplier) / bStats.defense / 512;
                 }
 
                 emit battleEvent(a.championHash, damage);
@@ -265,11 +284,11 @@ contract CoreGame {
 
                 if (byteToUint32(random[31 - i]) < b_threshold_to_crit) {
                     damage =
-                        (b.attack * 2 * damageMultiplier) /
-                        a.defense /
+                        (bStats.attack * 2 * damageMultiplier) /
+                        aStats.defense /
                         512;
                 } else {
-                    damage = (b.attack * damageMultiplier) / a.defense / 512;
+                    damage = (bStats.attack * damageMultiplier) / aStats.defense / 512;
                 }
 
                 emit battleEvent(b.championHash, damage);
@@ -283,9 +302,7 @@ contract CoreGame {
         outcome.winnerXP = uint32(
             (damageByA * 50) /
                 (damageByA + damageByB) +
-                25 +
-                4 *
-                (b.level - a.level)
+                25
         );
         if (damageByA > damageByB) {
             outcome.winner = a.championHash;
@@ -324,18 +341,105 @@ contract CoreGame {
         }
 
         championsClaimedXP[myChampionHash][vm_hash] = true;
-        Champion storage myChampion = champions[myChampionHash];
+        ChampionStats storage myChampionStats = champions[myChampionHash].stats;
         if (myChampionHash == b.winner) {
-            myChampion.xp += b.winnerXP;
+            myChampionStats.xp += b.winnerXP;
         } else {
-            myChampion.xp += b.loserXP;
+            myChampionStats.xp += b.loserXP;
         }
 
-        while (myChampion.xp >= requiredXPtoLevelUp(myChampion.level)) {
-            myChampion.xp -= requiredXPtoLevelUp(myChampion.level);
-            myChampion.level += 1;
-            myChampion.upgradePoints += 1;
+        while (myChampionStats.xp >= requiredXPtoLevelUp(myChampionStats.level)) {
+            myChampionStats.xp -= requiredXPtoLevelUp(myChampionStats.level);
+            myChampionStats.level += 1;
+            myChampionStats.upgradePoints += 1;
         }
+    }
+
+    struct AudienceMember {
+        uint currentDraft;
+        uint timestamp;
+        uint points;
+    }
+
+    mapping (address => AudienceMember) audience;
+    mapping (address => mapping(bytes32 => bool)) audienceClaimedPoints;
+
+    function registerAudienceMember(uint _currentDraft) public {
+        AudienceMember memory newMember;
+        newMember.currentDraft = _currentDraft;
+        newMember.timestamp = block.timestamp;
+        audience[msg.sender] = newMember;
+    }
+
+    function changeAudienceDraft(uint _newDraft) public {
+        AudienceMember storage me = audience[msg.sender];
+        me.currentDraft = _newDraft;
+        me.timestamp = block.timestamp;
+
+        // TODO: Points are reset to zero. Future feature, user retains points from previous champions drafted.
+        me.points = 0;
+    }
+
+    function audienceClaimPoints(bytes memory vaa) public {
+        (string memory payload, bytes32 vm_hash) = messenger
+            .receiveEncodedMsgOnce(vaa);
+
+        if (audienceClaimedPoints[msg.sender][vm_hash]) {
+            revert("You have already claimed the points for the battle.");
+        }
+
+        BattleOutcome memory b = abi.decode(bytes(payload), (BattleOutcome));
+
+        AudienceMember storage me = audience[msg.sender];
+
+        if (
+            !(b.championHashA == me.currentDraft ||
+                b.championHashB == me.currentDraft)
+        ) {
+            revert(
+                "You are not impacted from this battle."
+            );
+        }
+
+        if (me.timestamp > b.timestamp) {
+            // if I drafted the champion after the battle happened
+            revert("You drafted the champion after the battle happened.");
+        }
+
+        audienceClaimedPoints[msg.sender][vm_hash] = true;
+        me.points += 1;
+    }
+
+    function audienceSubmitVote(uint8 choice) public {
+        AudienceMember storage me = audience[msg.sender];
+
+        uint myDraftHash = me.currentDraft;
+
+        if (me.points == 0) {
+            revert("You don't have enough points to perform this action.");
+        }
+        if (choice > 4) {
+            revert("Invalid choice.");
+        }
+        if ((getUpgrades(myDraftHash) >> (4 - choice)) & 0x01 == 0) {
+            revert(
+                "You are not allowed to vote for that stat. See getUpgrades for available upgrades."
+            );
+        }
+
+        AudienceVotes storage votes = champions[myDraftHash].votes;
+
+        if (choice == 1) {
+            votes.attack += 5;
+        } else if (choice == 2) {
+            votes.defense += 2;
+        } else if (choice == 3) {
+            votes.speed += 5;
+        } else {
+            votes.crit_rate += 8;
+        }
+
+        me.points -= 1;
     }
 
     /**
@@ -348,7 +452,7 @@ contract CoreGame {
         Champion storage myChampion = champions[myChampionHash];
         require(myChampion.owner == msg.sender);
 
-        if (myChampion.upgradePoints == 0) {
+        if (myChampion.stats.upgradePoints == 0) {
             revert("Your champion does not have any upgrade points.");
         }
         if (choice > 4) {
@@ -360,17 +464,19 @@ contract CoreGame {
             );
         }
 
+        ChampionStats storage stats = myChampion.stats;
+
         if (choice == 1) {
-            myChampion.attack += 5;
+            stats.attack += 5;
         } else if (choice == 2) {
-            myChampion.defense += 2;
+            stats.defense += 2;
         } else if (choice == 3) {
-            myChampion.speed += 5;
+            stats.speed += 5;
         } else {
-            myChampion.crit_rate += 8;
+            stats.crit_rate += 8;
         }
 
-        myChampion.upgradePoints -= 1;
+        stats.upgradePoints -= 1;
     }
 
     function optIn(uint256 myChampionHash) public checkRounds(ActionType.UPGRADE) {
@@ -386,7 +492,11 @@ contract CoreGame {
     function getUpgrades(uint256 myChampionHash) public view returns (uint8) {
         Champion memory myChampion = champions[myChampionHash];
 
-        uint32 curUpgradeLocation = myChampion.level - myChampion.upgradePoints;
+        if (myChampion.owner == address(0)) {
+            return 0;
+        }
+
+        uint32 curUpgradeLocation = myChampion.stats.level - myChampion.stats.upgradePoints;
 
         bytes memory hashBytes = abi.encodePacked(myChampionHash);
         if (curUpgradeLocation % 2 == 0) {
@@ -411,7 +521,7 @@ contract CoreGame {
             uint32
         )
     {
-        Champion memory me = champions[myChampionHash];
+        ChampionStats memory me = champions[myChampionHash].stats;
         return (me.attack, me.defense, me.speed, me.crit_rate);
     }
 

@@ -12,6 +12,7 @@ contract CoreGameTest is Test {
     address admin;
     address user1;
     address user2;
+    address aud;
 
     function setUp() public {
         // avalanche fuji testnet
@@ -27,6 +28,7 @@ contract CoreGameTest is Test {
         admin = address(this);
         user1 = address(0x100);
         user2 = address(0x200);
+        aud = address(0x300);
 
         nftCollection.mint(user1);
         nftCollection.mint(user1);
@@ -40,18 +42,25 @@ contract CoreGameTest is Test {
 
     function testRegister() public {
         // user 1
-        vm.startPrank(user1);
+        vm.prank(user1);
         uint256 c1 = game.registerNFT(address(nftCollection), 0);
 
         // fail bad id
         vm.expectRevert("ERC721: invalid token ID");
+        vm.prank(user1);
         game.registerNFT(address(nftCollection), 200);
         vm.expectRevert("You do not own this NFT");
+        vm.prank(user1);
         game.registerNFT(address(nftCollection), 5);
 
         // fail double register
         vm.expectRevert("NFT is already registered");
+        vm.prank(user1);
         game.registerNFT(address(nftCollection), 0);
+
+        
+        vm.prank(aud);
+        game.registerAudienceMember(c1);
 
         // ( , address owner, , , , , , , , , , ) = game.champions(c1);
 
