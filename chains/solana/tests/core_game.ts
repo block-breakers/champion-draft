@@ -1,12 +1,20 @@
 import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { deriveAddress, getPdaAssociatedTokenAddress, makeReadOnlyAccountMeta, makeWritableAccountMeta } from "./helpers/utils";
+import {
+  deriveAddress,
+  getPdaAssociatedTokenAddress,
+  makeReadOnlyAccountMeta,
+  makeWritableAccountMeta,
+} from "./helpers/utils";
 import keccak256 from "keccak256";
 import { CoreGame } from "../target/types/core_game";
 import * as fs from "fs";
-import {findProgramAddressSync} from "@project-serum/anchor/dist/cjs/utils/pubkey";
-import {CORE_BRIDGE_ADDRESS, TOKEN_BRIDGE_ADDRESS} from "./helpers/consts";
+import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey";
+import { CORE_BRIDGE_ADDRESS, TOKEN_BRIDGE_ADDRESS } from "./helpers/consts";
+import { PublicKey } from "@solana/web3.js";
+import { Wallet } from "@project-serum/anchor/dist/cjs/provider";
+import { WormholeSolanaSdk } from "../target/types/wormhole_solana_sdk";
 
 function getVaaBody(signedVaa: Buffer): Buffer {
   return signedVaa.subarray(57 + 66 * signedVaa[5]);
@@ -27,59 +35,78 @@ function hashVaaPayload(signedVaa: Buffer): Buffer {
 class Orchestrator {
   program: Program<CoreGame>;
   wormhole: web3.PublicKey;
-  tokenBridge: web3.PublicKey;
 
   whMessageKey: web3.Keypair;
-  custodian: web3.PublicKey;
+  sdk: Program<WormholeSolanaSdk>;
 
-  constructor(program: Program<CoreGame>, wormhole: web3.PublicKey) {
+  constructor(
+    program: Program<CoreGame>,
+    wormhole: web3.PublicKey,
+    sdk: Program<WormholeSolanaSdk>
+  ) {
     this.program = program;
     this.wormhole = wormhole;
+    this.sdk = sdk;
   }
 
-  async registerNft(payer: web3.Keypair, saleId: Buffer) {
+  async registerNft(payer: web3.Keypair | Wallet, message_account: Keypair) {
     const program = this.program;
     const wormhole = this.wormhole;
+    const sdk = this.sdk;
 
-    // Accounts
-    const payload = deriveAddress([Buffer.from("champion")], this.program.programId);
-
+    // PDAs
+    const [championPda] = PublicKey.findProgramAddressSync(
+      [anchor.utils.bytes.utf8.encode("champion"), payer.publicKey.toBuffer()],
+      program.programId
+    );
     const wormholeConfig = deriveAddress([Buffer.from("Bridge")], wormhole);
     const wormholeFeeCollector = deriveAddress(
       [Buffer.from("fee_collector")],
       wormhole
     );
 
-    // contributor is the emitter
+    // the emitter address is a PDA from the business-logic program that calls the sdk (not the sdk itself)
     const wormholeEmitter = deriveAddress(
       [Buffer.from("emitter")],
       program.programId
     );
+    console.log("emitter", wormholeEmitter.toString());
     const wormholeSequence = deriveAddress(
       [Buffer.from("Sequence"), wormholeEmitter.toBytes()],
       wormhole
     );
 
-    const wormholeMessage =
-      this.deriveAttestContributionsMessageAccount(saleId);
-
+    console.log("Sending transaction");
+    console.log(sdk.programId.toString());
+    console.log("core bridge", CORE_BRIDGE_ADDRESS.toString());
     return program.methods
       .registerNft()
       .accounts({
         owner: payer.publicKey,
+        // the PDA account for the champion's data
+        championAccount: championPda,
+        // the account where wormhole will store the message
+        wormholeMessageAccount: message_account.publicKey,
+        // system program
         systemProgram: web3.SystemProgram.programId,
-        wormholeProgram: wormhole,
+        // the sdk program
+        sdkProgram: sdk.programId,
+
+        // wormhole accounts
+        emitterAccount: wormholeEmitter,
+        coreBridge: wormhole,
         wormholeConfig,
         wormholeFeeCollector,
-        emitterAccount: wormholeEmitter,
         wormholeSequence,
-        wormholeMessageAccount: wormholeMessage,
+
+        // system accounts
         clock: web3.SYSVAR_CLOCK_PUBKEY,
         rent: web3.SYSVAR_RENT_PUBKEY,
       })
-      .signers([payer])
+      .signers([message_account])
       .rpc();
   }
+
   deriveSealedTransferMessageAccount(
     saleId: Buffer,
     mint: web3.PublicKey
@@ -126,26 +153,41 @@ class Orchestrator {
 
 describe("solana", () => {
   // Configure the client to use the local cluster.
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.env();
+  provider.opts.skipPreflight = true;
+  anchor.setProvider(provider);
 
+  const message_account = anchor.web3.Keypair.generate();
 
-  const owner = anchor.web3.Keypair.fromSecretKey(
-    Uint8Array.from(
-      JSON.parse(
-        fs
-          .readFileSync("/home/pbibersteinintern/.config/solana/id.json")
-          .toString()
-      )
-    )
-  );
-  console.log((anchor.workspace));
+  // let owner = anchor.web3.Keypair.fromSecretKey(
+  //   Uint8Array.from(
+  //     JSON.parse(
+  //       fs
+  //         .readFileSync("/home/pbibersteinintern/.config/solana/id.json")
+  //         .toString()
+  //     )
+  //   )
+  // );
+  const owner = provider.wallet;
+
   const program = anchor.workspace.CoreGame as Program<CoreGame>;
+  const sdk = anchor.workspace.WormholeSolanaSdk as Program<WormholeSolanaSdk>;
 
-  const orchestrator = new Orchestrator(program, CORE_BRIDGE_ADDRESS);
+  const orchestrator = new Orchestrator(program, CORE_BRIDGE_ADDRESS, sdk);
 
   it("Is initialized!", async () => {
     // Add your test here.
-    const tx = await orchestrator.registerNft(owner, Buffer.from("0"));
+    const tx = await orchestrator.registerNft(owner, message_account);
     console.log("Your transaction signature", tx);
+
+    const [championPda] = PublicKey.findProgramAddressSync(
+      [anchor.utils.bytes.utf8.encode("champion"), owner.publicKey.toBuffer()],
+      program.programId
+    );
+
+    console.log(
+      "Champion:",
+      await program.account.championAccount.fetch(championPda)
+    );
   });
 });
