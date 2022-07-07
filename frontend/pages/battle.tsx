@@ -95,6 +95,7 @@ const Battle: NextPage<BattleProps> = ({ networks, abi }) => {
   };
 
   useEffect(() => {
+    console.log("inside")
     if (battleStarted) {
       return;
     }
@@ -106,10 +107,14 @@ const Battle: NextPage<BattleProps> = ({ networks, abi }) => {
       console.log("network; null");
       return;
     }
-
-    startBattle(usersNetwork, provider);
+      startBattle(usersNetwork, provider).catch((e) => {
+        console.log(e);
+        window.alert(e.data.data.reason)
+        router.back();
+      })
+    
     setBattleStarted(true);
-  }, [provider, usersNetwork]);
+  }, [usersNetwork]);
 
   return (
     <div className="flex flex-col items-center justify-center w-screen h-screen">

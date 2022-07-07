@@ -35,13 +35,11 @@ struct Champion {
 }
 
 struct BattleOutcome {
-    uint256 championHashA;
-    uint256 championHashB;
-    uint256 winner;
+    uint256 winnerHash;
+    uint256 loserHash;
     uint32 winnerXP;
     uint32 loserXP;
     uint timestamp;
-    // timestamp
 }
 
 contract CoreGame {
@@ -59,7 +57,7 @@ contract CoreGame {
     address owner;
 
     event battleEvent(uint256 damageByHash, uint256 damage);
-    event battleOutcome(uint256 winnerHash, uint256 loserHash);
+    event battleOutcome(uint256 winnerHash, uint256 loserHash, uint64 vaa);
     event championRegistered(uint256 championHash);
     event randomNum(bytes32 rand);
 
@@ -297,30 +295,37 @@ contract CoreGame {
         }
 
         BattleOutcome memory outcome;
-        outcome.championHashA = a.championHash;
-        outcome.championHashB = b.championHash;
-        outcome.winnerXP = uint32(
-            (damageByA * 50) /
-                (damageByA + damageByB) +
-                25
-        );
         if (damageByA > damageByB) {
-            outcome.winner = a.championHash;
-            emit battleOutcome(a.championHash, b.championHash);
+            outcome.winnerHash = a.championHash;
+            outcome.loserHash = b.championHash;
+
+            outcome.winnerXP = uint32(
+                (damageByA * 50) /
+                    (damageByA + damageByB)
+            );
         } else {
-            outcome.winner = b.championHash;
-            emit battleOutcome(b.championHash, a.championHash);
+            outcome.winnerHash = b.championHash;
+            outcome.loserHash = a.championHash;
+            outcome.winnerXP = uint32(
+                (damageByB * 50) /
+                    (damageByA + damageByB)
+            );
+
         }
+        
         outcome.loserXP = 100 - outcome.winnerXP;
         outcome.winnerXP += 25; // bonus for winning
+        outcome.timestamp = block.timestamp;
 
         bytes memory encodedOutcome = abi.encode(outcome);
-        messenger.sendMsg(encodedOutcome);
+        uint64 seq = messenger.sendMsg(encodedOutcome);
+
+        emit battleOutcome(outcome.winnerHash, outcome.loserHash, seq);
     }
 
     function claimXP(uint256 myChampionHash, bytes memory encodedMsg)
         public
-        checkRounds(ActionType.UPGRADE)
+        checkRounds(ActionType.REGISTER)
     {
         (string memory payload, bytes32 vm_hash) = messenger
             .receiveEncodedMsgOnce(encodedMsg);
@@ -328,8 +333,8 @@ contract CoreGame {
         BattleOutcome memory b = abi.decode(bytes(payload), (BattleOutcome));
 
         if (
-            !(b.championHashA == myChampionHash ||
-                b.championHashB == myChampionHash)
+            !(b.winnerHash == myChampionHash ||
+                b.loserHash == myChampionHash)
         ) {
             revert(
                 "The champion you entered is not impacted from this battle."
@@ -342,7 +347,7 @@ contract CoreGame {
 
         championsClaimedXP[myChampionHash][vm_hash] = true;
         ChampionStats storage myChampionStats = champions[myChampionHash].stats;
-        if (myChampionHash == b.winner) {
+        if (myChampionHash == b.winnerHash) {
             myChampionStats.xp += b.winnerXP;
         } else {
             myChampionStats.xp += b.loserXP;
@@ -393,8 +398,8 @@ contract CoreGame {
         AudienceMember storage me = audience[msg.sender];
 
         if (
-            !(b.championHashA == me.currentDraft ||
-                b.championHashB == me.currentDraft)
+            !(b.winnerHash == me.currentDraft ||
+                b.loserHash == me.currentDraft)
         ) {
             revert(
                 "You are not impacted from this battle."
@@ -479,7 +484,7 @@ contract CoreGame {
         stats.upgradePoints -= 1;
     }
 
-    function optIn(uint256 myChampionHash) public checkRounds(ActionType.UPGRADE) {
+    function optIn(uint256 myChampionHash) public checkRounds(ActionType.REGISTER) {
         Champion storage myChampion = champions[myChampionHash];
         require(myChampion.owner == msg.sender);
 

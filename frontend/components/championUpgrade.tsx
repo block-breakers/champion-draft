@@ -1,21 +1,21 @@
 import * as ethers from "ethers";
-import {useRouter} from "next/router";
+import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { Network } from "../pages";
 // import * as storage from "../util/storage";
 
 type ChampionUpgradeProps = {
-  provider: ethers.providers.Web3Provider;
-  network: Network;
-  abi: any;
-  hash: string | null;
+    provider: ethers.providers.Web3Provider;
+    network: Network;
+    abi: any;
+    hash: string | null;
 };
 
 const ChampionUpgrade = ({
-  provider,
-  network,
-  abi,
-  hash
+    provider,
+    network,
+    abi,
+    hash
 }: ChampionUpgradeProps) => {
 
     const [upgrades, setUpgrades] = useState<number[]>([]);
@@ -25,14 +25,14 @@ const ChampionUpgrade = ({
 
     const contract = useMemo(
         () =>
-          new ethers.Contract(
-            network.deployedAddress,
-            abi,
-            provider.getSigner()
-          ),
+            new ethers.Contract(
+                network.deployedAddress,
+                abi,
+                provider.getSigner()
+            ),
         [network]
-      );
-    
+    );
+
     useEffect(() => {
         if (hash == null) {
             return;
@@ -54,8 +54,8 @@ const ChampionUpgrade = ({
         const up = await contract.getUpgrades(hash);
         console.log("UP: ", up);
         const allUpgrades = [];
-        for (let i = 0; i < 4; i ++) {
-            if ((up >> (3-i)) & 1) {
+        for (let i = 0; i < 4; i++) {
+            if ((up >> (3 - i)) & 1) {
                 allUpgrades.push(i);
             }
         }
@@ -66,24 +66,39 @@ const ChampionUpgrade = ({
 
     const onUpgrade = async (choice: number) => {
         setDisabled(true);
-        console.log("upgrading choice", choice+1);
+        console.log("upgrading choice", choice + 1);
         try {
-            await (await contract.upgrade(hash, choice+1)).wait();
+            await (await contract.upgrade(hash, choice + 1)).wait();
         } catch (e) {
             window.alert("Can not upgrade during battle round!");
             setDisabled(false);
         }
 
         console.log("finished upgrade, getting upgrade points");
-        await getUpgradePoints(hash);
+        try {
+            await getUpgradePoints(hash);
+        } catch (e) {
+            console.log(e);
+            if (e && e.data && e.data.data)
+                window.alert(e.data.data.reason)
+        }
         console.log("have upgrade points", upgradePoints);
 
         router.reload();
     }
 
-    const onOptIn = async () => {
-        await contract.optIn(hash);
-
+    const onOptIn = () => {
+        contract.optIn(hash)
+        .then((blockFinalize) => {
+            blockFinalize.wait().then(() => {
+                router.reload();
+            })
+        })
+        .catch(e => {
+            console.log(e);
+            if (e && e.data && e.data.data)
+                window.alert(e.data.data.reason)
+        })
     }
 
     if (hash == null) {
@@ -96,29 +111,29 @@ const ChampionUpgrade = ({
                 <div className="font-bold text-l">Upgrade points remaining: {upgradePoints} </div>
                 <p className="mt-3 text-center text-gray-700 grid grid-cols-2 gap-5">
                     {upgrades.map((up) => {
-                        return <button 
-                            className={disabled ? 
-                                "bg-blue-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed" 
+                        return <button
+                            className={disabled ?
+                                "bg-blue-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
                                 : "btn btn-blue"}
                             disabled={disabled}
-                            onClick={()=>onUpgrade(up)}
-                            >
-                                {upgradeNames[up]}
-                            </button>
+                            onClick={() => onUpgrade(up)}
+                        >
+                            {upgradeNames[up]}
+                        </button>
                     })}
-                    <button 
-                            className={upgradePoints != 0 ? 
-                                "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed" 
-                                : "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded"}
-                            disabled={upgradePoints != 0}
-                            onClick={()=>onOptIn()}
-                            >
-                                Opt In for Next Round
-                            </button>
+                    <button
+                        className={upgradePoints != 0 ?
+                            "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
+                            : "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded"}
+                        disabled={upgradePoints != 0}
+                        onClick={() => onOptIn()}
+                    >
+                        Opt In for Next Round
+                    </button>
                 </p>
             </div>
         </div>
-        </>
+    </>
 }
 
 export default ChampionUpgrade;

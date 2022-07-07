@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SkillBar from 'react-skillbars';
 
 type ChampionCardProps = {
     // the ethers provider that allows us to call contracts on chain
@@ -14,6 +15,29 @@ const ChampionCard = ({champion, vaa, isSelf, buttonOnClick, buttonText}: Champi
     if (champion == null) {
         return <></>;
     }
+
+    const xp = [{type: "XP", level: champion.stats.xp/champion.stats.level}];
+    const colors = {
+        bar: '#fffaaa',
+        title: {
+          text: {
+            hue: {
+              minimum: 30,
+              maximum: 150
+            },
+            saturation: 50,
+            level: {
+              minimum: 30,
+              maximum: 90
+            }
+          },
+          background: {
+            hue: 20,
+            saturation:50,
+            level:30
+          }
+        }
+      }
 
     const [imageURI, setImageURI] = useState(null);
     const [name, setName] = useState("Unknown name");
@@ -63,6 +87,7 @@ const ChampionCard = ({champion, vaa, isSelf, buttonOnClick, buttonText}: Champi
                     <span className="max-w-sm text-xl font-bold truncate">{name}</span>
                     <span className="float-right text-md">Lvl. {champion.stats.level}</span>
                 </span>
+                <SkillBar skills={xp} height={10}/>
                 <p className="mt-3 text-center text-gray-700 grid grid-cols-2 gap-8">
                     <p>Attack: {champion.stats.attack}</p>
                     <p>Defense: {champion.stats.defense}</p>

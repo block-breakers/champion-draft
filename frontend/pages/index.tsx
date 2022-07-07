@@ -9,6 +9,8 @@ import { getUsersNetworkIdentifier } from "../util/chainConnection";
 import ChampionUpgrade from "../components/championUpgrade";
 import { useRouter } from "next/router";
 import RoundsView from "../components/roundsView";
+import ChampionXP from "../components/championXP";
+import * as storage from "../util/storage";
 
 export type Network = {
   type: string;
@@ -76,10 +78,13 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       (window as any).ethereum
     );
     setProvider(provider);
+
+    setChampionHash(storage.fetchChampionHash());
   }, []);
 
   // figure out which chain the user is connecting from
   const [usersNetwork, setUsersNetwork] = useState<Network | null>(null);
+  const [usersNetworkName, setUsersNetworkName] = useState("");
   const getUsersNetwork = async (
     provider: ethers.providers.Web3Provider | null
   ) => {
@@ -87,6 +92,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       return;
     }
     let identifier = await getUsersNetworkIdentifier(provider);
+    setUsersNetworkName(identifier);
     console.log("Connecting from ", identifier);
     setUsersNetwork(networks[identifier]);
   };
@@ -101,13 +107,15 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       return;
     }
     setContract(
-      new ethers.Contract(usersNetwork.deployedAddress, abi, provider)
+      new ethers.Contract(usersNetwork.deployedAddress, abi, provider.getSigner())
     );
   }, [provider, usersNetwork]);
 
-  useEffect(()=> {
-    if (championHash != "")
+  useEffect(() => {
+    if (championHash != null)
       setPlayerKind("fighter");
+    else
+      setPlayerKind("unjoined");
   }, [championHash]);
 
   const router = useRouter();
@@ -135,7 +143,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
   return (
     <div
       className="flex flex-col items-center justify-center min-h-screen p-0 m-0 min-w-screen align-center"
-      // style={{ minHeight: "100vw" }}
+    // style={{ minHeight: "100vw" }}
     >
       <Head>
         <title>Champion Draft</title>
@@ -181,6 +189,12 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
                     network={usersNetwork}
                     hash={championHash}
                   />
+                  <ChampionXP 
+                    contract={contract} 
+                    usersNetwork={usersNetwork}
+                    serverBaseURL={serverBaseURL} 
+                    userNetworkName={usersNetworkName} 
+                    hash={championHash} />
                 </>
               )}
             </div>
