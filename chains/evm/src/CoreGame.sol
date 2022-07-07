@@ -23,12 +23,11 @@ struct Champion {
 }
 
 struct BattleOutcome {
-    uint256 championHashA;
-    uint256 championHashB;
-    uint256 winner;
+    uint256 winnerHash;
+    uint256 loserHash;
     uint32 winnerXP;
     uint32 loserXP;
-    // timestamp
+    uint timestamp;
 }
 
 contract CoreGame {
@@ -46,7 +45,7 @@ contract CoreGame {
     address owner;
 
     event battleEvent(uint256 damageByHash, uint256 damage);
-    event battleOutcome(uint256 winnerHash, uint256 loserHash);
+    event battleOutcome(uint256 winnerHash, uint256 loserHash, uint64 vaa);
     event championRegistered(uint256 championHash);
     event randomNum(bytes32 rand);
 
@@ -278,27 +277,32 @@ contract CoreGame {
         }
 
         BattleOutcome memory outcome;
-        outcome.championHashA = a.championHash;
-        outcome.championHashB = b.championHash;
-        outcome.winnerXP = uint32(
-            (damageByA * 50) /
-                (damageByA + damageByB) +
-                25 +
-                4 *
-                (b.level - a.level)
-        );
         if (damageByA > damageByB) {
-            outcome.winner = a.championHash;
-            emit battleOutcome(a.championHash, b.championHash);
+            outcome.winnerHash = a.championHash;
+            outcome.loserrHash = b.championHash;
+
+            outcome.winnerXP = uint32(
+                (damageByA * 50) /
+                    (damageByA + damageByB)
+            );
         } else {
-            outcome.winner = b.championHash;
-            emit battleOutcome(b.championHash, a.championHash);
+            outcome.winnerHash = b.championHash;
+            outcome.loserHash = a.championHash;
+            outcome.winnerXP = uint32(
+                (damageByB * 50) /
+                    (damageByA + damageByB)
+            );
+
         }
+        
         outcome.loserXP = 100 - outcome.winnerXP;
         outcome.winnerXP += 25; // bonus for winning
+        outcome.timestamp = block.timestamp;
 
         bytes memory encodedOutcome = abi.encode(outcome);
-        messenger.sendMsg(encodedOutcome);
+        uint64 seq = messenger.sendMsg(encodedOutcome);
+
+        emit battleOutcome(outcome.winnerHash, outcome.loserHash, seq);
     }
 
     function claimXP(uint256 myChampionHash, bytes memory encodedMsg)

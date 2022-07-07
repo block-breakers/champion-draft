@@ -9,6 +9,7 @@ import { getUsersNetworkIdentifier } from "../util/chainConnection";
 import ChampionUpgrade from "../components/championUpgrade";
 import { useRouter } from "next/router";
 import RoundsView from "../components/roundsView";
+import ChampionXP from "../components/championXP";
 
 export type Network = {
   type: string;
@@ -76,6 +77,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
 
   // figure out which chain the user is connecting from
   const [usersNetwork, setUsersNetwork] = useState<Network | null>(null);
+  const [usersNetworkName, setUsersNetworkName] = useState("");
   const getUsersNetwork = async (
     provider: ethers.providers.Web3Provider | null
   ) => {
@@ -83,6 +85,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       return;
     }
     let identifier = await getUsersNetworkIdentifier(provider);
+    setUsersNetworkName(identifier);
     console.log("Connecting from ", identifier);
     setUsersNetwork(networks[identifier]);
   };
@@ -104,7 +107,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
   const router = useRouter();
   const startBattle = (opponentVaa: string) => {
     if (championHash === null) {
-        return;
+      return;
     }
 
     router.push({
@@ -120,7 +123,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
   return (
     <div
       className="flex flex-col items-center justify-center min-h-screen p-0 m-0 min-w-screen align-center"
-      // style={{ minHeight: "100vw" }}
+    // style={{ minHeight: "100vw" }}
     >
       <Head>
         <title>Champion Draft</title>
@@ -132,7 +135,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       ) : (
         <>
           <div className="min-w-full mb-10">
-          <RoundsView contract={contract} />
+            <RoundsView contract={contract} />
             <div className="text-center">Mine: </div>
             <div className="flex items-center w-full justify-evenly">
               <ChampionRegistrar
@@ -142,15 +145,17 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
                 championHash={championHash}
                 setChampionHash={(h) => setChampionHash(h)}
               />
-              <ChampionUpgrade 
+              <ChampionUpgrade
                 provider={provider}
                 abi={abi}
-                network={usersNetwork} 
+                network={usersNetwork}
                 hash={championHash} />
+
+              <ChampionXP contract={contract} serverBaseURL={serverBaseURL} userNetworkName={usersNetworkName} hash={championHash} />
             </div>
           </div>
           <div className="text-center">
-            Theirs: 
+            Theirs:
             <ChampionViewer
               networks={networks}
               provider={provider}

@@ -14,7 +14,8 @@ class EVMListener:
         addr2 = Web3.toChecksumAddress(gameContractAddr)
         self.gameContract = self.provider.eth.contract(address=addr2, abi=abi)
 
-        self.filter = self.gameContract.events.championRegistered.createFilter(fromBlock='latest')
+        self.registerFilter = self.gameContract.events.championRegistered.createFilter(fromBlock='latest')
+        self.outcomeFilter = self.gameContract.events.battleOutcome.createFilter(fromBlock='latest')
 
         self.redisDatabase = redisDatabase
 
@@ -34,14 +35,23 @@ class EVMListener:
 
     async def listen(self, interval):
         while True:
-            for championRegistered in self.filter.get_new_entries():
+            for championRegistered in self.registerFilter.get_new_entries():
                 print(championRegistered)
-                self.redisDatabase.rpush(self.name, hex(championRegistered.args.championHash))
+                self.redisDatabase.rpush(f"{self.name}-champions", hex(championRegistered.args.championHash))
+            for battleOutcome in self.outcomeFilter.get_new_entries():
+                print("new battle outcome event", battleOutcome)
+                winner = hex(battleOutcome.args.winnerHash)
+                loser = hex(battleOutcome.args.loserHash)
+                vaa = battleOutcome.args.vaa
+                self.redisDatabase.rpush(f"{self.name}-battles-{winner}", vaa)
+                self.redisDatabase.rpush(f"{self.name}-battles-{loser}", vaa)
             await asyncio.sleep(interval)
 
     def getChampions(self, idx):
-        print(self.name)
-        return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.lrange(self.name, idx, -1)))
+        return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.lrange(f"{self.name}-champions", idx, -1)))
+
+    def getBattles(self, championHash, idx):
+        return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.lrange(f"{self.name}-battles-{championHash}", idx, -1)))
 
 if __name__ == "__main__":
     f = open("../xdapp.config.json")

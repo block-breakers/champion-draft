@@ -85,7 +85,7 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, startBat
     if (res.status == 200) {
       let data = await res.json();
       console.log("data is: ", data);
-      setLastChampionIdx(data.length)
+      setLastChampionIdx((lastChampionIdx) => lastChampionIdx + data.length);
       const championInfos = await Promise.all(data.map(getChampion));
       console.log("info", championInfos);
       setChampions(champions => [...champions, ...championInfos]);
