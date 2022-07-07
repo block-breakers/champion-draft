@@ -43,8 +43,8 @@ const ChampionUpgrade = ({
 
     const getUpgradePoints = async (hash: string) => {
         const champion = await contract.champions(hash);
-        setUpgradePoints(champion.upgradePoints);
-        if (champion.upgradePoints > 0) {
+        setUpgradePoints(champion.stats.upgradePoints);
+        if (champion.stats.upgradePoints > 0) {
             setDisabled(false);
         }
     }

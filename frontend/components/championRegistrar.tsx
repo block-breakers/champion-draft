@@ -29,9 +29,9 @@ const ChampionRegistrar = ({
       network.deployedAddress,
       abi,
       provider.getSigner()
-      );
-      const champion = await contract.champions(championHash);
-      console.log("getting champion data", champion);
+    );
+    const champion = await contract.champions(championHash);
+    console.log("getting champion data", champion);
     setChampionData(champion);
   };
 
@@ -58,12 +58,24 @@ const ChampionRegistrar = ({
   return (
     <div className="">
       {championData !== null ? (
-        <ChampionCard
-          champion={championData}
-          isSelf={true}
-          startBattle={() => {}}
-          vaa=""
-        />
+        <div className="flex flex-col justify-center">
+          <ChampionCard
+            champion={championData}
+            isSelf={true}
+            startBattle={() => {}}
+            vaa=""
+          />
+          <button
+            className="bg-gray-500 text-white font-bold py-2 px-4 rounded"
+            onClick={() => {
+              storage.removeChampionHash();
+              location.reload();
+            }}
+          >
+            Logout
+          </button>
+        </div>
+
       ) : (
         <div className="flex flex-col items-center justify-between w-64 px-4 py-8 rounded shadow-inner h-96 bg-neutral-300">
           <p className="text-center">You haven't registered a champion 😔</p>

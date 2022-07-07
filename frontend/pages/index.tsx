@@ -105,6 +105,11 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
     );
   }, [provider, usersNetwork]);
 
+  useEffect(()=> {
+    if (championHash != "")
+      setPlayerKind("fighter");
+  }, [championHash]);
+
   const router = useRouter();
   const startBattle = (opponentVaa: string, _: string) => {
     if (championHash === null) {
@@ -140,10 +145,10 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       {provider === null || usersNetwork === null ? (
         "Loading..."
       ) : (
-        <>
+        <div>
           <div className="min-w-full mb-10">
             <RoundsView contract={contract} />
-            <div className="flex flex-col items-center w-full justify-evenly">
+            <div className="flex flex-row items-center w-full justify-evenly">
               {playerKind === "unjoined" ? (
                 <div className="flex flex-col space-y-4">
                   <button
@@ -163,7 +168,6 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
                 <></>
               ) : (
                 <>
-                  <div className="text-center">Mine: </div>
                   <ChampionRegistrar
                     provider={provider}
                     abi={abi}
@@ -199,7 +203,9 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
               </>
             ) : (
               <>
-                Theirs:
+                <div className="text-xl">
+                  Available Champions to battle:
+                </div>
                 <ChampionViewer
                   networks={networks}
                   provider={provider}
@@ -212,7 +218,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
               </>
             )}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

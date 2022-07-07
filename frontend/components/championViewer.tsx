@@ -86,10 +86,11 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
     if (res.status == 200) {
       let data = await res.json();
       console.log("data is: ", data);
-      setLastChampionIdx(data.length)
+      // setLastChampionIdx(lastChampionIdx => lastChampionIdx + data.length)
       const championInfos = await Promise.all(data.map(getChampion));
       console.log("info", championInfos);
-      setChampions(champions => [...champions, ...championInfos]);
+      // setChampions(champions => [...champions, ...championInfos]);
+      setChampions(championInfos);
     }
     setIsLoading(false);
   };
@@ -97,19 +98,6 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
   // when this component loads, we need to fetch the initial (pre-existing) set of champions
   useEffect(() => {
     fetchChampions();
-  }, [contract]);
-
-  useEffect(() => {
-    const listener: ethers.providers.Listener = async (_author, event) => {
-      let newChampionInfo = await parseEvent(event);
-      setChampions((old) => [...old, newChampionInfo]);
-    };
-
-    // attach listener to new events, but remember to unregister it when this component is unmounted
-    contract.on("championRegistered", listener);
-    return () => {
-      contract.off("championRegistered", listener);
-    };
   }, [contract]);
 
   return (
@@ -124,7 +112,7 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
       />
       <div className="mt-9 grid grid-cols-3 gap-4">
         {isLoading ? "Loading..." : champions.map((championData) => (
-          (hash === null || championData.champion[0].toHexString() !== hash) &&
+          (championData.champion.championHash != 0 && (hash === null || championData.champion[0].toHexString() !== hash)) &&
           <ChampionCard
             champion={championData.champion}
             vaa={championData.vaa}

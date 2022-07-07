@@ -10,7 +10,7 @@ type ChampionCardProps = {
     buttonText: string
 };
 
-const ChampionCard = ({champion, vaa, isSelf, onClick, buttonText}: ChampionCardProps) => {
+const ChampionCard = ({champion, vaa, isSelf, buttonOnClick, buttonText}: ChampionCardProps) => {
     if (champion == null) {
         return <></>;
     }
@@ -75,7 +75,7 @@ const ChampionCard = ({champion, vaa, isSelf, onClick, buttonText}: ChampionCard
                 <div className="px-6 pb-6 text-center">
                 <button 
                     className="bg-red-300 btn hover:bg-red-400"
-                    onClick={() => onClick(vaa, champion.championHash)}>
+                    onClick={() => buttonOnClick(vaa, champion.championHash)}>
                     {buttonText}
                 </button>
                 </div>

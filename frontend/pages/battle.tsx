@@ -8,6 +8,7 @@ import * as ethers from "ethers";
 import { Config, Network } from ".";
 import { getUsersNetworkIdentifier } from "../util/chainConnection";
 
+
 export const getStaticProps: GetStaticProps = async () => {
   let config = JSON.parse(
     readFileSync("../xdapp.config.json").toString()
@@ -117,7 +118,7 @@ const Battle: NextPage<BattleProps> = ({ networks, abi }) => {
       ) : (
         <>
           <BattleSummary battleInfo={battleInfo} />
-          <button className="btn btn-blue" >Back</button>
+          <button className="btn btn-blue" onClick={()=>router.back()}>Back</button>
         </>
       )}
     </div>
