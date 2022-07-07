@@ -57,5 +57,5 @@ pub struct ChampionAccount {
 
 #[account]
 pub struct WormholeMessageAccount {
-    pub data: [u8; 1024],
+    pub data: [u8; 64],
 }

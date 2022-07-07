@@ -1,12 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::{rent, clock};
-use hex::decode;
-
-use super::lib::*;
-use super::wormhole::*;
 
 #[derive(Accounts)]
-#[instruction(_emitter_id:Pubkey, payload:Vec<u8>, nonce:u32)]
+#[instruction(_emitter_id:Pubkey, _core_bridge_address:Pubkey, payload:Vec<u8>, nonce:u32)]
 pub struct PostMessage<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -15,8 +11,7 @@ pub struct PostMessage<'info> {
     #[account(mut)]
     pub wormhole_message_key: Signer<'info>,
 
-
-    //Emitter account is the PDA of the calling contract's "emitter" account. NOT of Core Bridge.
+    //Emitter account is a PDA of the calling contract, NOT of Core Bridge (or sdk).
     #[account(
         seeds = [
             b"emitter".as_ref(),
@@ -30,7 +25,7 @@ pub struct PostMessage<'info> {
 
     //Core Bridge Accounts
     #[account(
-        constraint = core_bridge.key() == id()
+        constraint = core_bridge.key() == _core_bridge_address
     )]
     /// CHECK: If someone passes in the wrong account, Guardians won't read the message
     pub core_bridge: AccountInfo<'info>,
@@ -39,7 +34,7 @@ pub struct PostMessage<'info> {
             b"Bridge".as_ref()
         ],
         bump,
-        seeds::program = id(),
+        seeds::program = _core_bridge_address,
         mut
     )]
     /// CHECK: If someone passes in the wrong account, Guardians won't read the message
@@ -49,7 +44,7 @@ pub struct PostMessage<'info> {
             b"fee_collector".as_ref()
         ],
         bump,
-        seeds::program = id(),
+        seeds::program = _core_bridge_address,
         mut
     )]
     /// CHECK: If someone passes in the wrong account, Guardians won't read the message
@@ -60,7 +55,7 @@ pub struct PostMessage<'info> {
             emitter_account.key().to_bytes().as_ref()
         ],
         bump,
-        seeds::program = id(),
+        seeds::program = _core_bridge_address,
         mut
     )]
     /// CHECK: If someone passes in the wrong account, Guardians won't read the message
@@ -85,7 +80,7 @@ pub struct PostMessage<'info> {
 pub struct ConfirmMessage<'info>{
     /// This requires some fancy hashing, so confirm it's derived address in the function itself.
     #[account(
-        constraint = core_bridge_vaa.to_account_info().owner == &id()
+        constraint = core_bridge_vaa.to_account_info().owner == &crate::ID
     )]
     /// CHECK: This account is owned by Core Bridge so we trust it
     pub core_bridge_vaa: AccountInfo<'info>,
