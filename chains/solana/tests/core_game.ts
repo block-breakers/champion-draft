@@ -168,6 +168,7 @@ describe("solana", () => {
   //     )
   //   )
   // );
+  
   const owner = provider.wallet;
 
   const program = anchor.workspace.CoreGame as Program<CoreGame>;

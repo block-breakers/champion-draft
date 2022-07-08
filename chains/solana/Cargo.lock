@@ -439,6 +439,10 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "borsh",
+ "byteorder",
+ "hex",
+ "sha3 0.10.1",
  "wormhole-solana-sdk",
 ]
 
@@ -1391,7 +1395,6 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "wormhole-solana-sdk"
 version = "0.1.0"
-source = "git+https://github.com/spacemandev-git/wormhole-solana-sdk#4e1c85e71f9c0f531b1c6de3bf6fab121b8e33df"
 dependencies = [
  "anchor-lang",
  "borsh",
