@@ -39,9 +39,6 @@ const ChampionXP = ({
         let url = new URL(serverBaseURL + "battles");
         url.searchParams.append("chain", userNetworkName);
         url.searchParams.append("champion", hash);
-        url.searchParams.append("idx", lastQueryIdx.toString());
-
-        console.log(url.toString())
 
         const res = await fetch(url.toString());
         if (res.status == 200) {
@@ -75,16 +72,26 @@ const ChampionXP = ({
 
         try {
             await (await contract.claimXP(hash, Buffer.from(data.vaaBytes, 'base64'))).wait();
+            let url = new URL(serverBaseURL + "removebattle");
+            url.searchParams.append("chain", userNetworkName);
+            url.searchParams.append("champion", hash);
+            url.searchParams.append("seq", seq);
+
+            const res = await fetch(url.toString()); 
+            if (res.status == 200) {
+                console.log("successfully removed seq", seq);
+            }
         } catch (e) {
             console.log(e);
             if (e && e.data && e.data.data)
                 window.alert(e.data.data.reason);
             setDisabled(false);
+
         }
 
         console.log("finished submitting xp");
 
-        // router.reload();
+        router.reload();
     }
 
 

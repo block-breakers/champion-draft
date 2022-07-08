@@ -122,10 +122,10 @@ const ChampionUpgrade = ({
                         </button>
                     })}
                     <button
-                        className={upgradePoints != 0 ?
+                        className={false ?
                             "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
                             : "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded"}
-                        disabled={upgradePoints != 0}
+                        disabled={false}
                         onClick={() => onOptIn()}
                     >
                         Opt In for Next Round

@@ -55,8 +55,8 @@ contract Messenger {
         // require(_applicationContracts[vm.emitterChainId] == vm.emitterAddress, "Invalid Emitter Address!");
     
         //3. Check that the message hasn't already been processed
-        require(!_completedMessages[vm.hash], "Message already processed");
-        _completedMessages[vm.hash] = true;
+        // require(!_completedMessages[vm.hash], "Message already processed");
+        // _completedMessages[vm.hash] = true;
 
         return (string(vm.payload), vm.hash);
     }

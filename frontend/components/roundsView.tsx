@@ -25,7 +25,7 @@ const RoundsView = ({ contract }: RoundsViewProps) => {
         const t = await contract.getTimeLeftInRound();
         console.log("TIME IS", t);
         const time = new Date();
-        time.setSeconds(time.getSeconds() + t);
+        time.setSeconds(time.getSeconds() + t + 1);
         setTimeLeft(time);
 
         let roundStr: string;
@@ -45,7 +45,7 @@ const RoundsView = ({ contract }: RoundsViewProps) => {
         // waits 5 seconds before querying again
         // setLoading(true);
         new Promise(r => {
-            setTimeout(r, 5000);
+            setTimeout(r, 3000);
         }).then(() => {
             console.log("finding time again");
             findTimeLeft();

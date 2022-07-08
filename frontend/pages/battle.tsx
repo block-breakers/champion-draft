@@ -109,7 +109,8 @@ const Battle: NextPage<BattleProps> = ({ networks, abi }) => {
     }
       startBattle(usersNetwork, provider).catch((e) => {
         console.log(e);
-        window.alert(e.data.data.reason)
+        if (e && e.data && e.data.data)
+          window.alert(e.data.data.reason)
         router.back();
       })
     

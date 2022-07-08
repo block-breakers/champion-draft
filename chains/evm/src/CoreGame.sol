@@ -295,7 +295,7 @@ contract CoreGame {
         }
 
         BattleOutcome memory outcome;
-        if (damageByA > damageByB) {
+        if (damageByA >= damageByB) {
             outcome.winnerHash = a.championHash;
             outcome.loserHash = b.championHash;
 
@@ -313,7 +313,7 @@ contract CoreGame {
 
         }
         
-        outcome.loserXP = 100 - outcome.winnerXP;
+        outcome.loserXP = 50 - outcome.winnerXP;
         outcome.winnerXP += 25; // bonus for winning
         outcome.timestamp = block.timestamp;
 

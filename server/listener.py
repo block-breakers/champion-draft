@@ -37,21 +37,25 @@ class EVMListener:
         while True:
             for championRegistered in self.registerFilter.get_new_entries():
                 print(championRegistered)
-                self.redisDatabase.rpush(f"{self.name}-champions", hex(championRegistered.args.championHash))
+                self.redisDatabase.sadd(f"{self.name}-champions", hex(championRegistered.args.championHash))
             for battleOutcome in self.outcomeFilter.get_new_entries():
                 print("new battle outcome event", battleOutcome)
                 winner = hex(battleOutcome.args.winnerHash)
                 loser = hex(battleOutcome.args.loserHash)
                 vaa = battleOutcome.args.vaa
-                self.redisDatabase.rpush(f"{self.name}-battles-{winner}", vaa)
-                self.redisDatabase.rpush(f"{self.name}-battles-{loser}", vaa)
+                self.redisDatabase.sadd(f"{self.name}-battles-{winner}", vaa)
+                self.redisDatabase.sadd(f"{self.name}-battles-{loser}", vaa)
             await asyncio.sleep(interval)
 
-    def getChampions(self, idx):
-        return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.lrange(f"{self.name}-champions", idx, -1)))
+    def getChampions(self):
+        print(self.redisDatabase.smembers(f"{self.name}-champions"))
+        return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.smembers(f"{self.name}-champions")))
 
-    def getBattles(self, championHash, idx):
-        return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.lrange(f"{self.name}-battles-{championHash}", idx, -1)))
+    def getBattles(self, championHash):
+        return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.smembers(f"{self.name}-battles-{championHash}")))
+    
+    def removeBattle(self, championHash, seq):
+        return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.srem(f"{self.name}-battles-{championHash}", seq)))
 
 if __name__ == "__main__":
     f = open("../xdapp.config.json")

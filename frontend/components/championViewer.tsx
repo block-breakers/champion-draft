@@ -75,7 +75,6 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
 
     let url = new URL(serverBaseURL + "champions");
     url.searchParams.append("chain", selectedNetworkName);
-    url.searchParams.append("idx", lastChampionIdx.toString());
 
     console.log(url.toString())
 

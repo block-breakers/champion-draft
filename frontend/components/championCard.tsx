@@ -42,6 +42,7 @@ const ChampionCard = ({champion, vaa, isSelf, buttonOnClick, buttonText}: Champi
     const [imageURI, setImageURI] = useState(null);
     const [name, setName] = useState("Unknown name");
 
+
     // const fetchMetadata = async (uri: string) => {
     //     uri = "https://crossorigin.me/" + uri;
     //     console.log("THe uri is", uri);
@@ -93,7 +94,7 @@ const ChampionCard = ({champion, vaa, isSelf, buttonOnClick, buttonText}: Champi
                     <p>Defense: {champion.stats.defense}</p>
                     <p>Speed: {champion.stats.speed}</p>
                     <p>Crit Rate: {champion.stats.crit_rate}%</p>
-                    <p className="col-span-2">Can battle at round {champion.round}</p>
+                    <p className="col-span-2">Can battle at round {champion.round%2 == 1 ? champion.round-1 : champion.round}</p>
                 </p>
             </div>
             {!isSelf && 

@@ -44,11 +44,10 @@ def healthz():
 @app.route("/champions")
 def champions():
     chainName = request.args.get('chain')
-    prevListLength = int(request.args.get('idx'))
     if chainName not in chainListeners:
         return jsonify([])
     
-    return jsonify(chainListeners[chainName].getChampions(prevListLength))
+    return jsonify(chainListeners[chainName].getChampions())
 
 @app.route("/battles")
 def battles():
@@ -58,9 +57,23 @@ def battles():
         return "error: please include a 32 bit champion hash in the URL query prefixed with 0x"
     if championHash[0:2] != "0x":
         return "error: please enter champion hash in hex prefixed with 0x"
-    prevListLength = int(request.args.get('idx'))
 
     if chainName not in chainListeners:
         return jsonify([])
     
-    return jsonify(chainListeners[chainName].getBattles(championHash, prevListLength))
+    return jsonify(chainListeners[chainName].getBattles(championHash))
+
+@app.route("/removebattle")
+def removeBattle():
+    chainName = request.args.get('chain')
+    championHash = request.args.get('champion')
+    if championHash == "" or len(championHash) != 66:
+        return "error: please include a 32 bit champion hash in the URL query prefixed with 0x"
+    if championHash[0:2] != "0x":
+        return "error: please enter champion hash in hex prefixed with 0x"
+    seq = request.args.get('seq')
+
+    if chainName not in chainListeners:
+        return jsonify([])
+    
+    return jsonify(chainListeners[chainName].removeBattle(championHash, seq))
