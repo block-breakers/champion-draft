@@ -12,6 +12,7 @@ type ChampionRegistrarProps = {
   abi: any;
   championHash: string | null;
   setChampionHash: (_: string | null) => void;
+  playerKind: string;
 };
 
 const ChampionRegistrar = ({
@@ -20,6 +21,7 @@ const ChampionRegistrar = ({
   abi,
   championHash,
   setChampionHash,
+  playerKind
 }: ChampionRegistrarProps) => {
   const [walletConnected, setWalletConnected] = useState<boolean>(false);
   const [championData, setChampionData] = useState<any | null>(null);
@@ -45,13 +47,24 @@ const ChampionRegistrar = ({
 
   // set up listener to read championHash from storage and writeback when component unloads
   useEffect(() => {
-    if (championHash === null) {
-      const result = storage.fetchChampionHash();
-      if (result !== null) {
-        setChampionHash(result);
+    if (playerKind == "fighter") {
+      if (championHash === null) {
+        const result = storage.fetchChampionHash();
+        if (result !== null) {
+          setChampionHash(result);
+        }
+      } else {
+        storage.saveChampionHash(championHash);
       }
     } else {
-      storage.saveChampionHash(championHash);
+      if (championHash === null) {
+        const result = storage.fetchDraftHash();
+        if (result !== null) {
+          setChampionHash(result);
+        }
+      } else {
+        storage.saveDraftHash(championHash);
+      }
     }
   }, [championHash]);
 
@@ -62,13 +75,13 @@ const ChampionRegistrar = ({
           <ChampionCard
             champion={championData}
             isSelf={true}
-            startBattle={() => {}}
             vaa=""
           />
           <button
             className="bg-gray-500 text-white font-bold py-2 px-4 rounded"
             onClick={() => {
               storage.removeChampionHash();
+              storage.removeDraftHash();
               location.reload();
             }}
           >
@@ -76,27 +89,27 @@ const ChampionRegistrar = ({
           </button>
         </div>
 
-      ) : (
+      ) :  <>
         <div className="flex flex-col items-center justify-between w-64 px-4 py-8 rounded shadow-inner h-96 bg-neutral-300">
-          <p className="text-center">You haven't registered a champion 😔</p>
+          <p className="text-center">{playerKind == "fighter" ? `You haven't registered a champion 😔` : `You haven't connected your wallet.`}</p>
           <p className="text-center">Want to change that?</p>
           <div className="flex items-center h-1/2">
-            {walletConnected ? (
+            {walletConnected ? (<>{ playerKind == "fighter" &&
               <TokenSelector
                 provider={provider}
                 abi={abi}
                 network={network}
                 setChampionHash={setChampionHash}
               />
-            ) : (
+            }</>) : (
               <MetamaskButton
                 setConnected={(b) => setWalletConnected(b)}
                 provider={provider}
-              />
-            )}
+              />)}
           </div>
         </div>
-      )}
+      </>
+      }
     </div>
   );
 };

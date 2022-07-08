@@ -45,6 +45,8 @@ class EVMListener:
                 vaa = battleOutcome.args.vaa
                 self.redisDatabase.sadd(f"{self.name}-battles-{winner}", vaa)
                 self.redisDatabase.sadd(f"{self.name}-battles-{loser}", vaa)
+                self.redisDatabase.sadd(f"{self.name}-votes-{winner}", vaa)
+                self.redisDatabase.sadd(f"{self.name}-votes-{loser}", vaa)
             await asyncio.sleep(interval)
 
     def getChampions(self):
@@ -55,7 +57,13 @@ class EVMListener:
         return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.smembers(f"{self.name}-battles-{championHash}")))
     
     def removeBattle(self, championHash, seq):
-        return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.srem(f"{self.name}-battles-{championHash}", seq)))
+        self.redisDatabase.srem(f"{self.name}-battles-{championHash}", seq)
+
+    def getVotes(self, championHash):
+        return list(map(lambda x: x.decode('utf-8'), self.redisDatabase.smembers(f"{self.name}-votes-{championHash}")))
+    
+    def removeVote(self, championHash, seq):
+        self.redisDatabase.srem(f"{self.name}-votes-{championHash}", seq)
 
 if __name__ == "__main__":
     f = open("../xdapp.config.json")

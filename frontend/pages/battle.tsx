@@ -111,6 +111,8 @@ const Battle: NextPage<BattleProps> = ({ networks, abi }) => {
         console.log(e);
         if (e && e.data && e.data.data)
           window.alert(e.data.data.reason)
+        else 
+          window.alert("Battle failed for unknown reason.")
         router.back();
       })
     

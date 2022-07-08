@@ -86,8 +86,6 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
       let data = await res.json();
       console.log("data is: ", data);
       // setLastChampionIdx(lastChampionIdx => lastChampionIdx + data.length)
-      let unique = new Set(data);
-      data = Array.from(unique);
       const championInfos = await Promise.all(data.map(getChampion));
       console.log("info", championInfos);
 

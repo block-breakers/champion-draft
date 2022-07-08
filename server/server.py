@@ -54,9 +54,9 @@ def battles():
     chainName = request.args.get('chain')
     championHash = request.args.get('champion')
     if championHash == "" or len(championHash) != 66:
-        return "error: please include a 32 bit champion hash in the URL query prefixed with 0x"
+        return jsonify("error: please include a 32 bit champion hash in the URL query prefixed with 0x"), 400
     if championHash[0:2] != "0x":
-        return "error: please enter champion hash in hex prefixed with 0x"
+        return jsonify("error: please enter champion hash in hex prefixed with 0x"), 400
 
     if chainName not in chainListeners:
         return jsonify([])
@@ -68,12 +68,41 @@ def removeBattle():
     chainName = request.args.get('chain')
     championHash = request.args.get('champion')
     if championHash == "" or len(championHash) != 66:
-        return "error: please include a 32 bit champion hash in the URL query prefixed with 0x"
+        return jsonify("error: please include a 32 bit champion hash in the URL query prefixed with 0x"), 400
     if championHash[0:2] != "0x":
-        return "error: please enter champion hash in hex prefixed with 0x"
+        return jsonify("error: please enter champion hash in hex prefixed with 0x"), 400
     seq = request.args.get('seq')
 
     if chainName not in chainListeners:
         return jsonify([])
     
     return jsonify(chainListeners[chainName].removeBattle(championHash, seq))
+
+@app.route("/votes")
+def votes():
+    chainName = request.args.get('chain')
+    championHash = request.args.get('champion')
+    if championHash == "" or len(championHash) != 66:
+        return jsonify("error: please include a 32 bit champion hash in the URL query prefixed with 0x"), 400
+    if championHash[0:2] != "0x":
+        return jsonify("error: please enter champion hash in hex prefixed with 0x"), 400
+
+    if chainName not in chainListeners:
+        return jsonify([])
+    
+    return jsonify(chainListeners[chainName].getVotes(championHash))
+
+# @app.route("/removebattle")
+# def removeBattle():
+#     chainName = request.args.get('chain')
+#     championHash = request.args.get('champion')
+#     if championHash == "" or len(championHash) != 66:
+#         return "error: please include a 32 bit champion hash in the URL query prefixed with 0x"
+#     if championHash[0:2] != "0x":
+#         return "error: please enter champion hash in hex prefixed with 0x"
+#     seq = request.args.get('seq')
+
+#     if chainName not in chainListeners:
+#         return jsonify([])
+    
+#     return jsonify(chainListeners[chainName].removeBattle(championHash, seq))

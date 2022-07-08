@@ -9,3 +9,15 @@ export const fetchChampionHash = (): string | null => {
 export const removeChampionHash = () => {
   return localStorage.removeItem("championHash");
 };
+
+export const saveDraftHash = (hash: string) => {
+  localStorage.setItem("draftHash", hash);
+};
+
+export const fetchDraftHash = (): string | null => {
+  return localStorage.getItem("draftHash");
+};
+
+export const removeDraftHash = () => {
+  return localStorage.removeItem("draftHash");
+};

@@ -89,11 +89,13 @@ const ChampionCard = ({champion, vaa, isSelf, buttonOnClick, buttonText}: Champi
                     <span className="float-right text-md">Lvl. {champion.stats.level}</span>
                 </span>
                 <SkillBar skills={xp} height={10}/>
+                <div className="text-xs truncate text-ellipsis">Champion Hash: {champion.championHash.toHexString()}</div>
+                <p className="text-xs truncate text-ellipsis">Owner Hash: {champion.owner.toString()}</p>
                 <p className="mt-3 text-center text-gray-700 grid grid-cols-2 gap-8">
-                    <p>Attack: {champion.stats.attack}</p>
-                    <p>Defense: {champion.stats.defense}</p>
-                    <p>Speed: {champion.stats.speed}</p>
-                    <p>Crit Rate: {champion.stats.crit_rate}%</p>
+                    <p>Attack: {champion.stats.attack} {isSelf && <div className="text-xs">Votes: {champion.votes.attack}</div>}</p>
+                    <p>Defense: {champion.stats.defense} {isSelf && <div className="text-xs">Votes: {champion.votes.defense}</div>}</p>
+                    <p>Speed: {champion.stats.speed} {isSelf && <div className="text-xs">Votes: {champion.votes.speed}</div>}</p>
+                    <p>Crit Rate: {champion.stats.crit_rate}% {isSelf && <div className="text-xs">Votes: {champion.votes.crit_rate}</div>}</p>
                     <p className="col-span-2">Can battle at round {champion.round%2 == 1 ? champion.round-1 : champion.round}</p>
                 </p>
             </div>
@@ -101,7 +103,7 @@ const ChampionCard = ({champion, vaa, isSelf, buttonOnClick, buttonText}: Champi
                 <div className="px-6 pb-6 text-center">
                 <button 
                     className="bg-red-300 btn hover:bg-red-400"
-                    onClick={() => buttonOnClick(vaa, champion.championHash)}>
+                    onClick={() => buttonOnClick(vaa, champion.championHash.toHexString())}>
                     {buttonText}
                 </button>
                 </div>

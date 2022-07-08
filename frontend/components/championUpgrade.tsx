@@ -9,19 +9,22 @@ type ChampionUpgradeProps = {
     network: Network;
     abi: any;
     hash: string | null;
+    playerKind: string;
 };
 
 const ChampionUpgrade = ({
     provider,
     network,
     abi,
-    hash
+    hash,
+    playerKind
 }: ChampionUpgradeProps) => {
 
     const [upgrades, setUpgrades] = useState<number[]>([]);
     const [upgradePoints, setUpgradePoints] = useState(0);
     const upgradeNames = ["Attack + 5", "Defense + 2", "Speed + 5", "Crit Rate + 8%"];
     const [disabled, setDisabled] = useState(true);
+    const [audienceVotes, setAudienceVotes] = useState(0);
 
     const contract = useMemo(
         () =>
@@ -51,6 +54,9 @@ const ChampionUpgrade = ({
 
     const getUpgrades = async (hash: string) => {
         await getUpgradePoints(hash);
+        if (playerKind == "audience") {
+            await getVotes();
+        }
         const up = await contract.getUpgrades(hash);
         console.log("UP: ", up);
         const allUpgrades = [];
@@ -101,6 +107,46 @@ const ChampionUpgrade = ({
         })
     }
 
+    const onVote = async (choice: number) => {
+        setDisabled(true);
+        console.log("voting for choice", choice + 1);
+        try {
+            await (await contract.audienceSubmitVote(choice + 1)).wait();
+        } catch (e) {
+            console.log(e);
+            if (e && e.data && e.data.data)
+                window.alert(e.data.data.reason)
+            else
+                window.alert("Vote failed for unknown reason")
+            setDisabled(false);
+        }
+
+        console.log("finished vote, getting votes points");
+        try {
+            await getVotes();
+        } catch (e) {
+            console.log(e);
+            if (e && e.data && e.data.data)
+                window.alert(e.data.data.reason);
+            else
+                window.alert("Unable to get your votes");
+        }
+        console.log("have votes points", audienceVotes);
+
+        router.reload();
+    }
+
+    const getVotes = async () => {
+        if (playerKind == "audience") {
+            const member = await contract.audience(provider.getSigner().getAddress());
+            console.log("I am audience", member);
+            setAudienceVotes(member.points);
+            if (member.points != 0) {
+                setDisabled(false);
+            }
+        }
+    }
+
     if (hash == null) {
         return <></>
     }
@@ -108,7 +154,12 @@ const ChampionUpgrade = ({
     return <>
         <div className="overflow-hidden rounded shadow-lg">
             <div className="px-6 py-4">
-                <div className="font-bold text-l">Upgrade points remaining: {upgradePoints} </div>
+                <div className="font-bold text-l">
+                    { playerKind == "fighter" ?
+                        `Upgrade points remaining: ${upgradePoints}` :
+                        `Votes remaining: ${audienceVotes}`
+                    }
+                </div>
                 <p className="mt-3 text-center text-gray-700 grid grid-cols-2 gap-5">
                     {upgrades.map((up) => {
                         return <button
@@ -116,20 +167,27 @@ const ChampionUpgrade = ({
                                 "bg-blue-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
                                 : "btn btn-blue"}
                             disabled={disabled}
-                            onClick={() => onUpgrade(up)}
+                            onClick={() => {
+                                if (playerKind == "fighter")
+                                    onUpgrade(up)
+                                else
+                                    onVote(up);
+                            }}
                         >
                             {upgradeNames[up]}
                         </button>
                     })}
-                    <button
-                        className={false ?
-                            "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
-                            : "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded"}
-                        disabled={false}
-                        onClick={() => onOptIn()}
-                    >
-                        Opt In for Next Round
-                    </button>
+                    { playerKind == "fighter" &&
+                        <button
+                            className={false ?
+                                "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
+                                : "col-span-2 bg-green-500 text-white font-bold py-2 px-4 rounded"}
+                            disabled={false}
+                            onClick={() => onOptIn()}
+                        >
+                            Opt In for Next Round
+                        </button>
+                    }
                 </p>
             </div>
         </div>

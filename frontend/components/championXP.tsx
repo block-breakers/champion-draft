@@ -9,6 +9,7 @@ type ChampionXPProps = {
     serverBaseURL: string;
     userNetworkName: string;
     hash: string | null;
+    playerKind: string;
 };
 
 const ChampionXP = ({
@@ -16,23 +17,28 @@ const ChampionXP = ({
     usersNetwork,
     serverBaseURL,
     userNetworkName,
-    hash
+    hash,
+    playerKind
 }: ChampionXPProps) => {
 
-    if (!contract || !hash) return <></>;
+    if (!contract || !hash || !playerKind) return <></>;
 
     const [battleVAAs, setBattleVAAs] = useState<string[]>([]);
     const [disabled, setDisabled] = useState(false);
     const [lastQueryIdx, setLastQueryIdx] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const [voteVAAs, setVoteVAAs] = useState<string[]>([]);
 
     useEffect(() => {
         if (hash == null) {
             return;
         }
-        getXP(hash);
+        if (playerKind == "fighter")
+            getXP(hash);
+        else
+            getVotes(hash);
 
-    }, [hash]);
+    }, [hash, playerKind]);
 
     const getXP = async (hash: string) => {
         setIsLoading(true);
@@ -47,6 +53,27 @@ const ChampionXP = ({
             // setLastQueryIdx((lastQueryIdx) => lastQueryIdx + data.length);
             // setBattleVAAs(battleVAAs => [...battleVAAs, ...data]);
             setBattleVAAs(data);
+        }
+        setIsLoading(false);
+    }
+
+    const getVotes = async (hash: string) => {
+        setIsLoading(true);
+        console.log("getting votes")
+        let url = new URL(serverBaseURL + "votes");
+        url.searchParams.append("chain", userNetworkName);
+        url.searchParams.append("champion", hash);
+
+        const res = await fetch(url.toString());
+        console.log(res)
+        if (res.status == 200) {
+            try {
+                let data = await res.json();
+                console.log("fetch votes data is: ", data);
+                setVoteVAAs(data);
+            } catch (e) {
+                console.log(e);
+            }
         }
         setIsLoading(false);
     }
@@ -94,23 +121,73 @@ const ChampionXP = ({
         router.reload();
     }
 
+    const onClaimVote = async (seq: string) => {
+        setDisabled(true);
+        console.log("submitting vote for seq", seq);
+
+        const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0");
+        console.log("emitter addr eth", emitterAddr);
+
+        let url = `http://localhost:7071/v1/signed_vaa/${usersNetwork.wormholeChainId
+            }/${emitterAddr}/${seq.toString()}`;
+    
+        // console.log(url);
+        let response = await fetch(url);
+        // console.log("fetched", response);
+        let data = await response.json();
+
+        console.log("got data for claim vote", data)
+
+        try {
+            await (await contract.audienceClaimPoints(Buffer.from(data.vaaBytes, 'base64'))).wait();
+        } catch (e) {
+            console.log(e);
+            if (e && e.data && e.data.data)
+                window.alert(e.data.data.reason);
+            else 
+                window.alert("Unable to claim Vote vaa.");
+            setDisabled(false);
+        }
+
+        console.log("finished claiming vote");
+
+        router.reload();
+    }
+
 
     return <>
         <div className="overflow-hidden rounded shadow-lg">
             <div className="px-6 py-4">
-                <div className="font-bold text-l">Claim Your XP Here</div>
+                <div className="font-bold text-l">Claim Your {playerKind == "fighter"? "XP" : "Votes"} Here</div>
                 <p className="mt-3 text-center text-gray-700 grid grid-cols-2 gap-5">
-                    {battleVAAs.map((vaa) => {
-                        return <button
-                            className={disabled ?
-                                "bg-blue-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
-                                : "btn btn-blue"}
-                            disabled={disabled}
-                            onClick={() => onClaimXP(vaa)}
-                        >
-                            Battle VAA {vaa}
-                        </button>
-                    })}
+                    { playerKind == "fighter" ?
+                        <>
+                        {battleVAAs.map((vaa) => {
+                            return <button
+                                className={disabled ?
+                                    "bg-blue-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
+                                    : "btn btn-blue"}
+                                disabled={disabled}
+                                onClick={() => onClaimXP(vaa)}
+                            >
+                                Battle VAA {vaa}
+                            </button>
+                        })}
+                        </> :
+                        <>
+                        {voteVAAs.map((vaa) => {
+                            return <button
+                                className={disabled ?
+                                    "bg-blue-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
+                                    : "btn btn-blue"}
+                                disabled={disabled}
+                                onClick={() => onClaimVote(vaa)}
+                            >
+                                Vote VAA {vaa}
+                            </button>
+                        })}
+                        </>
+                    }
                 </p>
             </div>
         </div>

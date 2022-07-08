@@ -64,6 +64,7 @@ type HomeProps = {
 
 const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
   const [championHash, setChampionHash] = useState<string | null>(null);
+  const [draftHash, setDraftHash] = useState<string | null>(null);
 
   const [playerKind, setPlayerKind] = useState<PlayerKind>("unjoined");
 
@@ -111,12 +112,46 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
     );
   }, [provider, usersNetwork]);
 
+  // useEffect(() => {
+    
+  // }, [championHash, draftHash]);
+
   useEffect(() => {
-    if (championHash != null)
+    const tryChampion = storage.fetchChampionHash();
+    const tryDraft = storage.fetchDraftHash();
+    if (tryChampion != null) {
       setPlayerKind("fighter");
-    else
+      setChampionHash(tryChampion);
+      storage.removeDraftHash();
+      setDraftHash(null);
+    }
+    else if (tryDraft != null) {
+      setPlayerKind("audience");
+      setDraftHash(tryDraft);
+      storage.removeChampionHash();
+      setChampionHash(null);
+    }
+    else {
       setPlayerKind("unjoined");
-  }, [championHash]);
+      setChampionHash(null);
+      setDraftHash(null);
+    }
+  }, [draftHash, championHash]);
+
+  // query contract to see if this audience memeber is already drafting
+  useEffect(() => {
+    if (contract && provider && playerKind == "audience") {
+      console.log("MY address is ", provider.getSigner().getAddress());
+      contract.audience(provider.getSigner().getAddress()).then((member) => {
+        console.log("got member ", member);
+        if (member.currentDraft != 0) {
+          storage.saveDraftHash(member.currentDraft.toHexString());
+          setDraftHash(member.currentDraft.toHexString());
+        }
+      });
+
+    }
+  }, [playerKind]);
 
   const router = useRouter();
   const startBattle = (opponentVaa: string, _: string) => {
@@ -137,7 +172,19 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
     if (contract === null) {
       return;
     }
-    contract.registerAudienceMember(championHash);
+    contract.registerAudienceMember(championHash)
+    .then(() => {
+      console.log("")
+      storage.saveDraftHash(championHash);
+      setDraftHash(championHash);
+    }).catch((e) => {
+        console.log(e);
+        if (e && e.data && e.data.data)
+          window.alert(e.data.data.reason)
+        else
+          window.alert("Drafting failed for unknown reason. Please try again later.")
+    })
+    ;
   };
 
   return (
@@ -156,6 +203,8 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
         <div>
           <div className="min-w-full mb-10">
             <RoundsView contract={contract} />
+            {playerKind != "unjoined" &&
+            <div className="text-center text-xl">{playerKind == "fighter" ? "My Champion:" : "Current Draft:"}</div>}
             <div className="flex flex-row items-center w-full justify-evenly">
               {playerKind === "unjoined" ? (
                 <div className="flex flex-col space-y-4">
@@ -172,29 +221,31 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
                     Join the audience
                   </button>
                 </div>
-              ) : playerKind === "audience" ? (
-                <></>
               ) : (
                 <>
                   <ChampionRegistrar
                     provider={provider}
                     abi={abi}
                     network={usersNetwork}
-                    championHash={championHash}
-                    setChampionHash={(h) => setChampionHash(h)}
-                  />
+                    championHash={playerKind == "fighter" ? championHash : draftHash}
+                    setChampionHash={playerKind == "fighter" ? (h) => setChampionHash(h) : (h) => setDraftHash(h)}
+                    playerKind={playerKind}
+                    />
                   <ChampionUpgrade
                     provider={provider}
                     abi={abi}
                     network={usersNetwork}
-                    hash={championHash}
-                  />
+                    hash={playerKind == "fighter" ? championHash : draftHash}
+                    playerKind={playerKind}
+                    />
                   <ChampionXP 
                     contract={contract} 
                     usersNetwork={usersNetwork}
                     serverBaseURL={serverBaseURL} 
                     userNetworkName={usersNetworkName} 
-                    hash={championHash} />
+                    hash={playerKind == "fighter" ? championHash : draftHash} 
+                    playerKind={playerKind}
+                    />
                 </>
               )}
             </div>
