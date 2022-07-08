@@ -17,7 +17,7 @@ use sha3::Digest;
 use std::io::{Cursor, Write};
 use std::str::FromStr;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("A9KvbP1zccZRUYcTjyCYQJ7n1iWKBcR8yDeGTj3mDphV");
 
 #[program]
 pub mod core_game {
