@@ -31,12 +31,9 @@ pub struct RegisterNft<'info> {
 
     /// once wormhole emits a VAA, it will be written back to this account so we have access to it
     #[account(
-        init,
-        payer = owner,
-        space = 8 + 1 * 64,
-        signer
+        mut,
     )]
-    pub wormhole_message_account: Account<'info, WormholeMessageAccount>,
+    pub wormhole_message_account: Signer<'info>,
 
     /// the token account that houses the user's NFT
     // #[account(constraint = token_account.owner == owner.key() @ ChampionDraftError::NotOwnerOfNft )]
@@ -48,13 +45,11 @@ pub struct RegisterNft<'info> {
     //
     /// CHECK: checked by callee
     #[account(
-        init,
-        payer = owner,
-        space = 8 + 1 * 64,
         seeds = [
             b"emitter".as_ref(),
         ],
         bump,
+        mut
     )]
     pub emitter_account: AccountInfo<'info>,
     /// CHECK: checked by callee
