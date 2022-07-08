@@ -14,7 +14,6 @@ import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pub
 import { CORE_BRIDGE_ADDRESS, TOKEN_BRIDGE_ADDRESS } from "./helpers/consts";
 import { PublicKey } from "@solana/web3.js";
 import { Wallet } from "@project-serum/anchor/dist/cjs/provider";
-import { WormholeSolanaSdk } from "../target/types/wormhole_solana_sdk";
 import {
   CHAIN_ID_SOLANA,
   getEmitterAddressSolana,
@@ -49,22 +48,18 @@ class Orchestrator {
   wormhole: web3.PublicKey;
 
   whMessageKey: web3.Keypair;
-  sdk: Program<WormholeSolanaSdk>;
 
   constructor(
     program: Program<CoreGame>,
     wormhole: web3.PublicKey,
-    sdk: Program<WormholeSolanaSdk>
   ) {
     this.program = program;
     this.wormhole = wormhole;
-    this.sdk = sdk;
   }
 
   async registerNft(payer: Wallet, message_account: anchor.web3.Keypair) {
     const program = this.program;
     const wormhole = this.wormhole;
-    const sdk = this.sdk;
 
     // PDAs
     const [championPda] = PublicKey.findProgramAddressSync(
@@ -101,8 +96,6 @@ class Orchestrator {
       wormholeMessageAccount: message_account.publicKey,
       // system program
       systemProgram: web3.SystemProgram.programId,
-      // the sdk program
-      sdkProgram: sdk.programId,
 
       // wormhole accounts
       emitterAccount: wormholeEmitter,
@@ -179,9 +172,9 @@ describe("solana", () => {
 console.log("==============", tryNativeToHexString("sKUZWMLJNqnqF9bMHomfbghWz62PNkewxRzGeXrJq35", "solana"));
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
-  provider.opts.skipPreflight = true;
-  provider.opts.commitment = "confirmed";
-  provider.opts.preflightCommitment = "confirmed";
+  // provider.opts.skipPreflight = true;
+  // provider.opts.commitment = "confirmed";
+  // provider.opts.preflightCommitment = "confirmed";
   anchor.setProvider(provider);
 
   const message_account = anchor.web3.Keypair.generate();
@@ -199,9 +192,8 @@ console.log("==============", tryNativeToHexString("sKUZWMLJNqnqF9bMHomfbghWz62P
   const owner = provider.wallet;
 
   const program = anchor.workspace.CoreGame as Program<CoreGame>;
-  const sdk = anchor.workspace.WormholeSolanaSdk as Program<WormholeSolanaSdk>;
 
-  const orchestrator = new Orchestrator(program, CORE_BRIDGE_ADDRESS, sdk);
+  const orchestrator = new Orchestrator(program, CORE_BRIDGE_ADDRESS);
 
   it("Is initialized!", async () => {
     // Add your test here.

@@ -31,7 +31,7 @@ pub fn id() -> Pubkey {
 //     Pubkey::from_str("Bridge1p5gheXUvJ6jGWGeCsgPKgnE3YgdGKRVCMY9o").unwrap()
 // }
 
-declare_id!("H7kDK3t7qhPjiLczYrNXMi22SVQAdLutSVZKGLimFdaF");
+declare_id!("HxLuvAscShj97WZqztRNzYmwoF46aLqKGvy8uv4Sf82k");
 
 /*
     1. Post Message

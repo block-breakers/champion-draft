@@ -2,7 +2,6 @@ use crate::data::{Champion, ChampionAccount, WormholeMessageAccount};
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::TokenAccount;
-use wormhole_solana_sdk::program::WormholeSolanaSdk;
 
 #[error_code]
 pub enum ChampionDraftError {
@@ -17,7 +16,6 @@ pub struct RegisterNft<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
-    pub sdk_program: Program<'info, WormholeSolanaSdk>,
 
     /// the account that will store the champion's stats
     #[account(

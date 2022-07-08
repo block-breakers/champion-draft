@@ -22,7 +22,7 @@ overflow-checks = true
 anchor-lang = "0.24.2"
 anchor-spl = "0.24.2"
 # wormhole-solana-sdk = { git = "https://github.com/spacemandev-git/wormhole-solana-sdk", features=["devnet"]}
-wormhole-solana-sdk = { path = "../wormhole-solana-sdk", features=["devnet", "cpi"]}
+# wormhole-solana-sdk = { path = "../wormhole-solana-sdk", features=["devnet", "cpi"]}
 sha3 = "0.10.1"
 byteorder = "1.4.3"
 borsh = "0.9.3"
