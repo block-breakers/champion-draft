@@ -18,10 +18,10 @@ type ChampionViewerProps = {
   buttonText: string;
 };
 
-type ChampionData = {
-  champion: object;
-  vaa: string;
-};
+// type ChampionData = {
+//   champion: object;
+//   // vaa: string;
+// };
 
 const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOnClick, buttonText}: ChampionViewerProps) => {
   const [champions, setChampions] = useState<object[]>([]);
@@ -47,26 +47,27 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
 
   // parses an emitted findVAA event into a `VaaInfo`
   // TODO: make the 2 fetches occur in parallel
-  const getChampion = async (hash: string): Promise<null | ChampionData> => {
+  const getChampion = async (hash: string): Promise<object> => {
     console.log("get champion", hash);
       const champion = await contract.champions(hash);
+      return champion;
   
-      const seq = ethers.BigNumber.from(champion.vaaSeq);
+      // const seq = ethers.BigNumber.from(champion.vaaSeq);
   
-      const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0")
+      // const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0")
   
-      let url = `http://localhost:7071/v1/signed_vaa/${selectedNetwork.wormholeChainId
-        }/${emitterAddr}/${seq.toString()}`;
+      // let url = `http://localhost:7071/v1/signed_vaa/${selectedNetwork.wormholeChainId
+      //   }/${emitterAddr}/${seq.toString()}`;
   
-      // console.log(url);
-      let response = await fetch(url);
-      // console.log("fetched", response);
-      let data = await response.json();
+      // // console.log(url);
+      // let response = await fetch(url);
+      // // console.log("fetched", response);
+      // let data = await response.json();
   
-      return {
-        champion: champion,
-        vaa: data.vaaBytes
-      };
+      // return {
+      //   champion: champion,
+      //   vaa: data.vaaBytes
+      // };
     };
 
   // query all pre-existing findVAA events and load them into state
@@ -112,10 +113,11 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
       />
       <div className="mt-9 grid grid-cols-3 gap-4">
         {isLoading ? "Loading..." : champions.map((championData) => (
-          (championData.champion.championHash != 0 && (hash === null || championData.champion[0].toHexString() !== hash)) &&
+          (championData.championHash != 0 && (hash === null || championData.championHash.toHexString() !== hash)) &&
           <ChampionCard
-            champion={championData.champion}
-            vaa={championData.vaa}
+            champion={championData}
+            serverBaseURL={serverBaseURL}
+            networkName={selectedNetworkName}
             isSelf={false}
             buttonOnClick={buttonOnClick}
             buttonText={buttonText}

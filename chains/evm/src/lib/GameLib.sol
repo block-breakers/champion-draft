@@ -46,12 +46,6 @@ library GameLib {
     uint256 constant TURNS = 10;
     // round length is 5 minutes
     uint256 constant ROUND_LENGTH = 300;
-    
-
-    event battleEvent(uint256 damageByHash, uint256 damage);
-    event battleOutcome(uint256 winnerHash, uint256 loserHash, uint64 vaa);
-    event championRegistered(uint256 championHash);
-    event randomNum(bytes32 rand);
 
     enum ActionType {
         BATTLE,

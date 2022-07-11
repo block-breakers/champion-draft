@@ -156,6 +156,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
   const router = useRouter();
   const startBattle = (opponentVaa: string, _: string) => {
     if (championHash === null) {
+      window.alert("You have not registed a champion!")
       return;
     }
 

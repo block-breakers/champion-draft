@@ -5,7 +5,8 @@ from flask_cors import CORS
 import redis
 import json
 import asyncio
-from listener import EVMListener
+from listener import EVMListener, formatMessengerAddress
+from web3 import Web3
 
 app = Flask(__name__)
 CORS(app)
@@ -25,12 +26,23 @@ chainListeners = {}
 def setup(name):
     chainConfig = config["networks"][name]
 
+    # Create contract
+    provider = Web3(Web3.HTTPProvider(chainConfig["rpc"]))
+    deployedAddress = Web3.toChecksumAddress(chainConfig["deployedAddress"])
+    gameContract = provider.eth.contract(address=deployedAddress, abi=abi)
+
+    # Create wormhole base url
+    baseURL = config["wormhole"]["restAddress"]
+    messengerAddress = gameContract.functions.getMessengerAddr().call()
+    messengerAddress = formatMessengerAddress(messengerAddress)
+    chainId = chainConfig["wormholeChainId"]
+    wormholeURL = f"{baseURL}/v1/signed_vaa/{chainId}/{messengerAddress}/"
+
     listener = EVMListener(
         name,
-        chainConfig["rpc"], 
-        chainConfig["deployedAddress"], 
-        abi,
-        redisDatabase)
+        gameContract,
+        redisDatabase,
+        wormholeURL)
 
     chainListeners[name] = listener
 
@@ -48,6 +60,20 @@ def champions():
         return jsonify([])
     
     return jsonify(chainListeners[chainName].getChampions())
+
+
+@app.route("/championVaa")
+def championVaa():
+    chainName = request.args.get('chain')
+    if chainName not in chainListeners:
+        return jsonify([])
+    championHash = request.args.get('champion')
+    if championHash == "" or len(championHash) != 66:
+        return jsonify("error: please include a 32 bit champion hash in the URL query prefixed with 0x"), 400
+    if championHash[0:2] != "0x":
+        return jsonify("error: please enter champion hash in hex prefixed with 0x"), 400
+    
+    return jsonify(chainListeners[chainName].getChampionVaa(championHash))
 
 @app.route("/battles")
 def battles():

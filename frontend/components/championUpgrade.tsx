@@ -76,8 +76,11 @@ const ChampionUpgrade = ({
         try {
             await (await contract.upgrade(hash, choice + 1)).wait();
         } catch (e) {
-            window.alert("Can not upgrade during battle round!");
-            setDisabled(false);
+            console.log(e);
+            if (e && e.data && e.data.data)
+                window.alert(e.data.data.reason)
+            else 
+                window.alert("Upgrade failed for unknown reason.");
         }
 
         console.log("finished upgrade, getting upgrade points");
@@ -87,6 +90,8 @@ const ChampionUpgrade = ({
             console.log(e);
             if (e && e.data && e.data.data)
                 window.alert(e.data.data.reason)
+            else 
+                window.alert("Upgrade failed for unknown reason.");
         }
         console.log("have upgrade points", upgradePoints);
 

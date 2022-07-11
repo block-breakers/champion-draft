@@ -128,6 +128,7 @@ contract GamexBattle is GameHelpers {
         
         outcome.loserXP = 50 - outcome.winnerXP;
         outcome.winnerXP += 25; // bonus for winning
+        outcome.loserXP += 8;   // bonus for playing
         outcome.timestamp = block.timestamp;
 
         bytes memory encodedOutcome = abi.encode(outcome);
@@ -211,6 +212,9 @@ contract GamexBattle is GameHelpers {
         } else {
             stats.crit_rate += 8;
         }
+
+        GameLib.AudienceVotes memory newVotes;
+        myChampion.votes = newVotes;
 
         stats.upgradePoints -= 1;
     }

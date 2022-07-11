@@ -4,14 +4,15 @@ import SkillBar from 'react-skillbars';
 type ChampionCardProps = {
     // the ethers provider that allows us to call contracts on chain
     champion: any;
-    vaa: string;
+    serverBaseURL: string;
+    networkName: string;
     isSelf: boolean;
     // the callback to fire when the user chooses to start a battle
     buttonOnClick: (opponentVaa: string, championHash: string) => void;
     buttonText: string
 };
 
-const ChampionCard = ({champion, vaa, isSelf, buttonOnClick, buttonText}: ChampionCardProps) => {
+const ChampionCard = ({champion, serverBaseURL, networkName, isSelf, buttonOnClick, buttonText}: ChampionCardProps) => {
     if (champion == null) {
         return <></>;
     }
@@ -41,6 +42,21 @@ const ChampionCard = ({champion, vaa, isSelf, buttonOnClick, buttonText}: Champi
 
     const [imageURI, setImageURI] = useState(null);
     const [name, setName] = useState("Unknown name");
+
+    const onClick = () => {
+        let url = new URL(serverBaseURL + "championVaa");
+        url.searchParams.append("chain", networkName);
+        url.searchParams.append("champion", champion.championHash.toHexString());
+
+        console.log(url.toString())
+
+        fetch(url.toString()).then((res) => {
+            res.json().then((vaa) => {
+                console.log("vaa is", vaa);
+                buttonOnClick(vaa, champion.championHash.toHexString())
+            })
+        }).catch()
+    }
 
 
     // const fetchMetadata = async (uri: string) => {
@@ -103,7 +119,7 @@ const ChampionCard = ({champion, vaa, isSelf, buttonOnClick, buttonText}: Champi
                 <div className="px-6 pb-6 text-center">
                 <button 
                     className="bg-red-300 btn hover:bg-red-400"
-                    onClick={() => buttonOnClick(vaa, champion.championHash.toHexString())}>
+                    onClick={() => onClick()}>
                     {buttonText}
                 </button>
                 </div>

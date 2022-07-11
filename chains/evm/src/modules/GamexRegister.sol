@@ -7,8 +7,8 @@ import {GameHelpers} from "../helpers/GameHelpers.sol";
 import {GameLib} from "../lib/GameLib.sol";
 
 contract GamexRegister is GameHelpers {
+    event championRegistered(uint256 championHash, uint64 vaa);
 
-    event championRegistered(uint256 championHash);
     /**
     
     Returns uint: the champion hash
@@ -68,7 +68,7 @@ contract GamexRegister is GameHelpers {
         champion.vaaSeq = seq;
         champions[champion.championHash] = champion;
 
-        emit championRegistered(champion.championHash);
+        emit championRegistered(champion.championHash, seq);
         return champion.championHash;
     }
 
@@ -80,5 +80,7 @@ contract GamexRegister is GameHelpers {
         bytes memory b = mintIdVaa(myChampion);
         uint64 seq = messenger.sendMsg(b);
         myChampion.vaaSeq = seq;
+
+        emit championRegistered(myChampionHash, seq);
     }
 }
