@@ -2,6 +2,7 @@ mod context;
 mod data;
 mod util;
 mod wormhole;
+mod constants;
 
 use crate::util::calculate_hash;
 use anchor_lang::prelude::*;
@@ -122,4 +123,42 @@ pub mod core_game {
         ctx.accounts.champion_account.champion = Champion::new(champion_seed as u32);
         Ok(())
     }
+
+
+    pub fn cross_chain_battle(ctx: Context<CrossChainBattle>) -> Result<()> {
+        ////Hash a VAA Extract and derive a VAA Key
+        //let vaa = PostedMessageData::try_from_slice(&ctx.accounts.core_bridge_vaa.data.borrow())?.0;
+        //let serialized_vaa = serialize_vaa(&vaa);
+
+        //let mut h = sha3::Keccak256::default();
+        //h.write(serialized_vaa.as_slice()).unwrap();
+        //let vaa_hash: [u8; 32] = h.finalize().into();
+
+        //let (vaa_key, _) = Pubkey::find_program_address(&[
+        //    b"PostedVAA",
+        //    &vaa_hash
+        //], &Pubkey::from_str(CORE_BRIDGE_ADDRESS).unwrap());
+
+        //if ctx.accounts.core_bridge_vaa.key() != vaa_key {
+        //    return err!(MessengerError::VAAKeyMismatch);
+        //}
+
+        //// Already checked that the SignedVaa is owned by core bridge in account constraint logic
+        ////Check that the emitter chain and address match up with the vaa
+        //if vaa.emitter_chain != ctx.accounts.emitter_acc.chain_id ||
+        //   vaa.emitter_address != &decode(&ctx.accounts.emitter_acc.emitter_addr.as_str()).unwrap()[..] {
+        //    return err!(MessengerError::VAAEmitterMismatch)
+        //}
+
+        //ctx.accounts.config.current_msg = String::from_utf8(vaa.payload).unwrap();
+
+        Ok(())
+    }
+
+    pub fn debug(ctx:Context<Debug>) -> Result<()> {
+        let vaa = PostedMessageData::try_from_slice(*ctx.accounts.core_bridge_vaa.data.borrow())?.0;
+        msg!("{:?}", vaa);
+        Ok(())  
+    }
 }
+
