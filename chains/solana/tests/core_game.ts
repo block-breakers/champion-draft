@@ -22,10 +22,9 @@ import {
   tryNativeToHexString,
 } from "@certusone/wormhole-sdk";
 import axios from "axios";
+import { WormholeSolanaSdk } from "../target/types/wormhole_solana_sdk";
 
 setDefaultWasm("node");
-
-
 
 function getVaaBody(signedVaa: Buffer): Buffer {
   return signedVaa.subarray(57 + 66 * signedVaa[5]);
@@ -49,10 +48,7 @@ class Orchestrator {
 
   whMessageKey: web3.Keypair;
 
-  constructor(
-    program: Program<CoreGame>,
-    wormhole: web3.PublicKey,
-  ) {
+  constructor(program: Program<CoreGame>, wormhole: web3.PublicKey) {
     this.program = program;
     this.wormhole = wormhole;
   }
@@ -169,30 +165,26 @@ class Orchestrator {
 }
 
 describe("solana", () => {
-console.log("==============", tryNativeToHexString("sKUZWMLJNqnqF9bMHomfbghWz62PNkewxRzGeXrJq35", "solana"));
+  console.log(
+    "==============",
+    tryNativeToHexString(
+      "sKUZWMLJNqnqF9bMHomfbghWz62PNkewxRzGeXrJq35",
+      "solana"
+    )
+  );
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
-  // provider.opts.skipPreflight = true;
+  provider.opts.skipPreflight = true;
   // provider.opts.commitment = "confirmed";
   // provider.opts.preflightCommitment = "confirmed";
   anchor.setProvider(provider);
 
-  const message_account = anchor.web3.Keypair.generate();
-
-  // let owner = anchor.web3.Keypair.fromSecretKey(
-  //   Uint8Array.from(
-  //     JSON.parse(
-  //       fs
-  //         .readFileSync("/home/pbibersteinintern/.config/solana/id.json")
-  //         .toString()
-  //     )
-  //   )
-  // );
-
-  const owner = provider.wallet;
-
   const program = anchor.workspace.CoreGame as Program<CoreGame>;
 
+  provider.connection.onLogs(program.programId, logListener, "confirmed");
+
+  const message_account = anchor.web3.Keypair.generate();
+  const owner = provider.wallet;
   const orchestrator = new Orchestrator(program, CORE_BRIDGE_ADDRESS);
 
   it("Is initialized!", async () => {
@@ -206,40 +198,65 @@ console.log("==============", tryNativeToHexString("sKUZWMLJNqnqF9bMHomfbghWz62P
 
     await sleep(2000);
 
-    console.log(
-      "Champion:",
-      await program.account.championAccount.fetch(championPda)
-    );
+    // console.log(
+    //   "Champion:",
+    //   await program.account.championAccount.fetch(championPda)
+    // );
 
     console.log("Your transaction signature", tx);
-    console.log(
-      "tx",
-      await program.provider.connection.getTransaction(tx, {
-        commitment: "confirmed",
-      })
-    );
+    // console.log(
+    //   "tx",
+    //   await program.provider.connection.getTransaction(tx, {
+    //     commitment: "confirmed",
+    //   })
+    // );
 
     const seq = parseSequencesFromLogSolana(
       await program.provider.connection.getTransaction(tx, {
         commitment: "confirmed",
       })
     );
-    console.log("Sequence: ", seq);
+    // console.log("Sequence: ", seq);
     const emitterAddress = await getEmitterAddressSolana(
       program.programId.toString()
     );
-    console.log("Emitter Address: ", emitterAddress);
+    // console.log("Emitter Address: ", emitterAddress);
 
     const WH_DEVNET_REST = "http://localhost:7071";
     const url = `${WH_DEVNET_REST}/v1/signed_vaa/${CHAIN_ID_SOLANA}/${emitterAddress}/${seq}`;
-    console.log(url);
+    // console.log(url);
 
     let response = await axios.get(url);
 
-    console.log(response);
+    // console.log(response);
+
+    await sleep(5000);
   });
 });
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+const logListener = async (logs, ctx) => {
+  console.group("Event emitted");
+  console.log(logs);
+  console.log(ctx);
+  const transaction = await provider.connection.getTransaction(logs.signature, {
+    commitment: "confirmed",
+  });
+
+  const seq = parseSequencesFromLogSolana(transaction);
+  const emitterAddress = await getEmitterAddressSolana(
+    program.programId.toString()
+  );
+  const WH_DEVNET_REST = "http://localhost:7071";
+  const url = `${WH_DEVNET_REST}/v1/signed_vaa/${CHAIN_ID_SOLANA}/${emitterAddress}/${seq}`;
+  console.log("url", url);
+
+  let response = await axios.get(url);
+
+  console.log(JSON.stringify(response));
+
+  console.groupEnd();
+};
