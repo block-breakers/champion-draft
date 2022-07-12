@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SkillBar from 'react-skillbars';
 
 type ChampionCardProps = {
@@ -18,27 +18,6 @@ const ChampionCard = ({champion, serverBaseURL, networkName, isSelf, buttonOnCli
     }
 
     const xp = [{type: "XP", level: champion.stats.xp/champion.stats.level}];
-    const colors = {
-        bar: '#fffaaa',
-        title: {
-          text: {
-            hue: {
-              minimum: 30,
-              maximum: 150
-            },
-            saturation: 50,
-            level: {
-              minimum: 30,
-              maximum: 90
-            }
-          },
-          background: {
-            hue: 20,
-            saturation:50,
-            level:30
-          }
-        }
-      }
 
     const [imageURI, setImageURI] = useState(null);
     const [name, setName] = useState("Unknown name");
@@ -58,17 +37,29 @@ const ChampionCard = ({champion, serverBaseURL, networkName, isSelf, buttonOnCli
         }).catch()
     }
 
+    useEffect(() => {
+        let url = "http://localhost:5000/metadataevm?id=";
+        url += champion.championHash.toHexString().substring(0,3) == "0x7" ? "1" : "0";
+        console.log("URL IS", url)
+        fetch(url).then((res) => {
+            res.json().then((data) => {
+
+                console.log("image+name response", data);
+                setName(data.name)
+                setImageURI(data.image)
+            })
+        })
+    }, [champion]);
 
     // const fetchMetadata = async (uri: string) => {
-    //     uri = "https://crossorigin.me/" + uri;
-    //     console.log("THe uri is", uri);
+    //     console.log(" uri is", uri);
     //     let response = await fetch(uri);
     //     console.log("image+name metadata", response);
     //     let data = await response.json();
-    //     console.log("image+name response", data);
     // }
 
     // fetchMetadata(champion.uri);
+    // fetchMetadata( + );
 
     return (
         // <div key={vaa.seq} className="p-2 m-2 break-all border shadow">

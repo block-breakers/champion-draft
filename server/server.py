@@ -118,6 +118,25 @@ def votes():
     
     return jsonify(chainListeners[chainName].getVotes(championHash))
 
+
+
+@app.route("/metadataevm")
+def metadataevm():
+    id = request.args.get('id')
+    
+    if id == "1":
+        return jsonify({
+            "name": "Ape #7116",
+            "image": "https://img.seadn.io/files/30b22cc7be97ee48126dd1b6fd9647fe.png"
+        })
+    elif id == "0":
+        return jsonify({
+            "name": "Ape #7429",
+            "image": "https://img.seadn.io/files/72b1af99df25c0482fd638471213dada.png"
+        })
+
+
+
 # @app.route("/removebattle")
 # def removeBattle():
 #     chainName = request.args.get('chain')
