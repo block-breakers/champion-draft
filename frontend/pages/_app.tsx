@@ -17,9 +17,12 @@ import { useWallet as useEthWallet, UseWalletProvider } from "use-wallet";
 require("@solana/wallet-adapter-react-ui/styles.css");
 import "../styles/globals.css";
 import type { AppProps } from "next/app";
+import {removeChampionHash} from "../util/storage";
 
 function InnerApp({ Component, pageProps }: AppProps) {
   const [dummy, setDummy] = useState(false);
+  const [ethConnectionAttempted, setEthConnectionAttempted] =
+    useState<boolean>(false);
 
   const ethWallet = useEthWallet();
   const solWallet = useSolanaWallet();
@@ -32,14 +35,20 @@ function InnerApp({ Component, pageProps }: AppProps) {
       localStorage.setItem("chain", "evm");
     } else {
       if (localStorage.getItem("chain") === "evm") {
-        ethWallet.connect();
+        if (!ethConnectionAttempted) {
+          // console.log("Attempting connection");
+          // setEthConnectionAttempted(true);
+          // ethWallet.connect();
+        }
       }
     }
   }
 
   const ethOnClick = () => {
     if (ethWallet.status === "connected") {
+      console.log("LOGGING OUT");
       localStorage.removeItem("chain");
+      removeChampionHash();
       ethWallet.reset();
     } else {
       ethWallet.connect();
