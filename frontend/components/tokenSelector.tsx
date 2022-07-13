@@ -3,20 +3,14 @@ import * as ethers from "ethers";
 import { Network } from "../pages/index";
 import { randomWord } from "../util/random";
 import * as interfaceChecker from "../util/ercInterfaces";
+import { Connection, registerNft, useChainConnection } from "../util/chainConnection";
 
 type TokenSelectorProps = {
-  provider: ethers.providers.Web3Provider;
-  network: Network;
-  abi: any;
   setChampionHash: (_: string | null) => void;
+  connection: Connection
 };
 
-const TokenSelector = ({
-  network,
-  provider,
-  abi,
-  setChampionHash,
-}: TokenSelectorProps) => {
+const TokenSelector = ({ setChampionHash, connection}: TokenSelectorProps) => {
   const [contractAddress, setContractAddress] = useState<string>("");
   const [tokenId, setTokenId] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -26,39 +20,17 @@ const TokenSelector = ({
     if (contractAddress === "") {
     }
 
-    const contract = new ethers.Contract(
-      network.deployedAddress,
-      abi,
-      provider.getSigner()
-    );
-
-    try {
-      interfaceChecker.isErc721(contractAddress, provider);
-    } catch (e) {
-      console.error(e);
-      setErrorMessage("Not ERC721 compatible");
+    if (connection === null) {
+      setErrorMessage("No connection to chain");
       return;
     }
 
-    const newHash = await contract.getChampionHash(contractAddress, tokenId);
-    console.log("cc", await contract.champions(newHash));
-    if ((await contract.champions(newHash)).championHash.toString() !== "0") {
-    console.log("skipping");
-        setChampionHash(newHash);
-        return;
+    const championHash = await registerNft(connection, contractAddress, tokenId);
+    if (typeof championHash === "object") {
+      setErrorMessage(championHash.error);
+      return;
     }
 
-    console.log("initiating tx");
-    const tx = await contract.registerNFT(contractAddress, tokenId);
-    console.log("tx", tx);
-    const receipt = await tx.wait();
-    console.log("receipt", receipt);
-
-    const championHash = await contract.getChampionHash(
-      contractAddress,
-      tokenId
-    );
-    console.log("Champion hash", championHash);
     setChampionHash(championHash);
   };
 
