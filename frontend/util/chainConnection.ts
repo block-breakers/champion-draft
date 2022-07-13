@@ -106,7 +106,7 @@ export const useChainConnection = () => {
       ethProvider.status === "connected" &&
       ethProvider.ethereum !== undefined
     ) {
-        console.log("using eth");
+      console.log("using eth");
       setConnection({
         provider: new ethers.providers.Web3Provider(
           ethProvider.ethereum.provider
@@ -140,9 +140,8 @@ export const useChainConnection = () => {
         ),
         network: usersNetwork,
       });
-    } 
-  }, [solanaProvider, ethProvider, usersNetwork, ]);
-
+    }
+  }, [solanaProvider, ethProvider, usersNetwork]);
 
   return connection;
 };

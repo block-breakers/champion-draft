@@ -23,7 +23,15 @@ type ChampionViewerProps = {
 //   // vaa: string;
 // };
 
-const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOnClick, buttonText}: ChampionViewerProps) => {
+const ChampionViewer = ({
+  networks,
+  provider,
+  abi,
+  serverBaseURL,
+  hash,
+  buttonOnClick,
+  buttonText,
+}: ChampionViewerProps) => {
   const [champions, setChampions] = useState<object[]>([]);
   const [selectedNetwork, setSelectedNetwork] = useState<Network>(
     networks[Object.keys(networks)[0]]
@@ -49,26 +57,26 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
   // TODO: make the 2 fetches occur in parallel
   const getChampion = async (hash: string): Promise<object> => {
     console.log("get champion", hash);
-      const champion = await contract.champions(hash);
-      return champion;
-  
-      // const seq = ethers.BigNumber.from(champion.vaaSeq);
-  
-      // const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0")
-  
-      // let url = `http://localhost:7071/v1/signed_vaa/${selectedNetwork.wormholeChainId
-      //   }/${emitterAddr}/${seq.toString()}`;
-  
-      // // console.log(url);
-      // let response = await fetch(url);
-      // // console.log("fetched", response);
-      // let data = await response.json();
-  
-      // return {
-      //   champion: champion,
-      //   vaa: data.vaaBytes
-      // };
-    };
+    const champion = await contract.champions(hash);
+    return champion;
+
+    // const seq = ethers.BigNumber.from(champion.vaaSeq);
+
+    // const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0")
+
+    // let url = `http://localhost:7071/v1/signed_vaa/${selectedNetwork.wormholeChainId
+    //   }/${emitterAddr}/${seq.toString()}`;
+
+    // // console.log(url);
+    // let response = await fetch(url);
+    // // console.log("fetched", response);
+    // let data = await response.json();
+
+    // return {
+    //   champion: champion,
+    //   vaa: data.vaaBytes
+    // };
+  };
 
   // query all pre-existing findVAA events and load them into state
   const fetchChampions = async () => {
@@ -77,11 +85,18 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
     let url = new URL(serverBaseURL + "champions");
     url.searchParams.append("chain", selectedNetworkName);
 
-    console.log(url.toString())
+    console.log(url.toString());
 
     const res = await fetch(url.toString());
 
-    console.log("fetching server with ", selectedNetworkName, "and", lastChampionIdx, " got result ", res)
+    console.log(
+      "fetching server with ",
+      selectedNetworkName,
+      "and",
+      lastChampionIdx,
+      " got result ",
+      res
+    );
 
     if (res.status == 200) {
       let data = await res.json();
@@ -112,17 +127,23 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
         networks={networks}
       />
       <div className="mt-9 grid grid-cols-3 gap-4">
-        {isLoading ? "Loading..." : champions.map((championData) => (
-          (championData.championHash != 0 && (hash === null || championData.championHash.toHexString() !== hash)) &&
-          <ChampionCard
-            champion={championData}
-            serverBaseURL={serverBaseURL}
-            networkName={selectedNetworkName}
-            isSelf={false}
-            buttonOnClick={buttonOnClick}
-            buttonText={buttonText}
-          />
-        ))}
+        {isLoading
+          ? "Loading..."
+          : champions.map(
+              (championData) =>
+                championData.championHash != 0 &&
+                (hash === null ||
+                  championData.championHash.toHexString() !== hash) && (
+                  <ChampionCard
+                    champion={championData}
+                    serverBaseURL={serverBaseURL}
+                    networkName={selectedNetworkName}
+                    isSelf={false}
+                    buttonOnClick={buttonOnClick}
+                    buttonText={buttonText}
+                  />
+                )
+            )}
       </div>
     </div>
   );

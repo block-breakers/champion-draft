@@ -19,15 +19,21 @@ const BattleSummary = ({ battleInfo }: BattleSummaryProps) => {
         <tbody>
           {battleEvents.map((event) => (
             <tr>
-              <td className="px-2 text-center">{event.args.damageByHash.toHexString()}</td>
-              <td className="px-2 text-center">{event.args.damage.toString()}</td>
+              <td className="px-2 text-center">
+                {event.args.damageByHash.toHexString()}
+              </td>
+              <td className="px-2 text-center">
+                {event.args.damage.toString()}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div className="font-bold">Winner: </div>{battleOutcome.args.winnerHash.toHexString()}
+      <div className="font-bold">Winner: </div>
+      {battleOutcome.args.winnerHash.toHexString()}
       <br />
-      <div className="font-bold">Loser: </div>{battleOutcome.args.loserHash.toHexString()}
+      <div className="font-bold">Loser: </div>
+      {battleOutcome.args.loserHash.toHexString()}
     </div>
   );
 };

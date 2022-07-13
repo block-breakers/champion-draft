@@ -108,12 +108,16 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       return;
     }
     setContract(
-      new ethers.Contract(usersNetwork.deployedAddress, abi, provider.getSigner())
+      new ethers.Contract(
+        usersNetwork.deployedAddress,
+        abi,
+        provider.getSigner()
+      )
     );
   }, [provider, usersNetwork]);
 
   // useEffect(() => {
-    
+
   // }, [championHash, draftHash]);
 
   useEffect(() => {
@@ -124,14 +128,12 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       setChampionHash(tryChampion);
       storage.removeDraftHash();
       setDraftHash(null);
-    }
-    else if (tryDraft != null) {
+    } else if (tryDraft != null) {
       setPlayerKind("audience");
       setDraftHash(tryDraft);
       storage.removeChampionHash();
       setChampionHash(null);
-    }
-    else {
+    } else {
       setPlayerKind("unjoined");
       setChampionHash(null);
       setDraftHash(null);
@@ -149,14 +151,13 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
           setDraftHash(member.currentDraft.toHexString());
         }
       });
-
     }
   }, [playerKind]);
 
   const router = useRouter();
   const startBattle = (opponentVaa: string, _: string) => {
     if (championHash === null) {
-      window.alert("You have not registed a champion!")
+      window.alert("You have not registed a champion!");
       return;
     }
 
@@ -173,25 +174,27 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
     if (contract === null) {
       return;
     }
-    contract.registerAudienceMember(championHash)
-    .then(() => {
-      console.log("")
-      storage.saveDraftHash(championHash);
-      setDraftHash(championHash);
-    }).catch((e) => {
+    contract
+      .registerAudienceMember(championHash)
+      .then(() => {
+        console.log("");
+        storage.saveDraftHash(championHash);
+        setDraftHash(championHash);
+      })
+      .catch((e) => {
         console.log(e);
-        if (e && e.data && e.data.data)
-          window.alert(e.data.data.reason)
+        if (e && e.data && e.data.data) window.alert(e.data.data.reason);
         else
-          window.alert("Drafting failed for unknown reason. Please try again later.")
-    })
-    ;
+          window.alert(
+            "Drafting failed for unknown reason. Please try again later."
+          );
+      });
   };
 
   return (
     <div
       className="flex flex-col items-center justify-center min-h-screen p-0 m-0 min-w-screen align-center"
-    // style={{ minHeight: "100vw" }}
+      // style={{ minHeight: "100vw" }}
     >
       <Head>
         <title>Champion Draft</title>
@@ -204,8 +207,11 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
         <div>
           <div className="min-w-full mb-10">
             <RoundsView contract={contract} />
-            {playerKind != "unjoined" &&
-            <div className="text-center text-xl">{playerKind == "fighter" ? "My Champion:" : "Current Draft:"}</div>}
+            {playerKind != "unjoined" && (
+              <div className="text-center text-xl">
+                {playerKind == "fighter" ? "My Champion:" : "Current Draft:"}
+              </div>
+            )}
             <div className="flex flex-row items-center w-full justify-evenly">
               {playerKind === "unjoined" ? (
                 <div className="flex flex-col space-y-4">
@@ -228,25 +234,31 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
                     provider={provider}
                     abi={abi}
                     network={usersNetwork}
-                    championHash={playerKind == "fighter" ? championHash : draftHash}
-                    setChampionHash={playerKind == "fighter" ? (h) => setChampionHash(h) : (h) => setDraftHash(h)}
+                    championHash={
+                      playerKind == "fighter" ? championHash : draftHash
+                    }
+                    setChampionHash={
+                      playerKind == "fighter"
+                        ? (h) => setChampionHash(h)
+                        : (h) => setDraftHash(h)
+                    }
                     playerKind={playerKind}
-                    />
+                  />
                   <ChampionUpgrade
                     provider={provider}
                     abi={abi}
                     network={usersNetwork}
                     hash={playerKind == "fighter" ? championHash : draftHash}
                     playerKind={playerKind}
-                    />
-                  <ChampionXP 
-                    contract={contract} 
+                  />
+                  <ChampionXP
+                    contract={contract}
                     usersNetwork={usersNetwork}
-                    serverBaseURL={serverBaseURL} 
-                    userNetworkName={usersNetworkName} 
-                    hash={playerKind == "fighter" ? championHash : draftHash} 
+                    serverBaseURL={serverBaseURL}
+                    userNetworkName={usersNetworkName}
+                    hash={playerKind == "fighter" ? championHash : draftHash}
                     playerKind={playerKind}
-                    />
+                  />
                 </>
               )}
             </div>
@@ -269,9 +281,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
               </>
             ) : (
               <>
-                <div className="text-xl">
-                  Available Champions to battle:
-                </div>
+                <div className="text-xl">Available Champions to battle:</div>
                 <ChampionViewer
                   networks={networks}
                   provider={provider}

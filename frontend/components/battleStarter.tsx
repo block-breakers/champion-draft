@@ -10,7 +10,6 @@ type BattleStarterProps = {
   abi: any;
 };
 
-
 export type BattleInfo = {
   battleEvents: ethers.Event[];
   battleOutcome: ethers.Event[];
@@ -61,10 +60,14 @@ const BattleStarter = ({
     let receipt = await tx.wait();
     console.log("receipt", receipt);
 
-    const battleEvents = receipt.events.filter(event => event.event === "battleEvent");
-    const battleOutcome = receipt.events.find(event => event.event === "battleOutcome");
-    console.log({battleEvents, battleOutcome});
-    setBattleInfo({battleEvents, battleOutcome});
+    const battleEvents = receipt.events.filter(
+      (event) => event.event === "battleEvent"
+    );
+    const battleOutcome = receipt.events.find(
+      (event) => event.event === "battleOutcome"
+    );
+    console.log({ battleEvents, battleOutcome });
+    setBattleInfo({ battleEvents, battleOutcome });
   };
 
   return (

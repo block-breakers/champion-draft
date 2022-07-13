@@ -4,194 +4,208 @@ import { useEffect, useMemo, useState } from "react";
 import { Network } from "../pages";
 
 type ChampionXPProps = {
-    contract: ethers.Contract;
-    usersNetwork: Network;
-    serverBaseURL: string;
-    userNetworkName: string;
-    hash: string | null;
-    playerKind: string;
+  contract: ethers.Contract;
+  usersNetwork: Network;
+  serverBaseURL: string;
+  userNetworkName: string;
+  hash: string | null;
+  playerKind: string;
 };
 
 const ChampionXP = ({
-    contract,
-    usersNetwork,
-    serverBaseURL,
-    userNetworkName,
-    hash,
-    playerKind
+  contract,
+  usersNetwork,
+  serverBaseURL,
+  userNetworkName,
+  hash,
+  playerKind,
 }: ChampionXPProps) => {
+  if (!contract || !hash || !playerKind) return <></>;
 
-    if (!contract || !hash || !playerKind) return <></>;
+  const [battleVAAs, setBattleVAAs] = useState<string[]>([]);
+  const [disabled, setDisabled] = useState(false);
+  const [lastQueryIdx, setLastQueryIdx] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [voteVAAs, setVoteVAAs] = useState<string[]>([]);
 
-    const [battleVAAs, setBattleVAAs] = useState<string[]>([]);
-    const [disabled, setDisabled] = useState(false);
-    const [lastQueryIdx, setLastQueryIdx] = useState(0);
-    const [isLoading, setIsLoading] = useState(true);
-    const [voteVAAs, setVoteVAAs] = useState<string[]>([]);
+  useEffect(() => {
+    if (hash == null) {
+      return;
+    }
+    if (playerKind == "fighter") getXP(hash);
+    else getVotes(hash);
+  }, [hash, playerKind]);
 
-    useEffect(() => {
-        if (hash == null) {
-            return;
-        }
-        if (playerKind == "fighter")
-            getXP(hash);
-        else
-            getVotes(hash);
+  const getXP = async (hash: string) => {
+    setIsLoading(true);
+    let url = new URL(serverBaseURL + "battles");
+    url.searchParams.append("chain", userNetworkName);
+    url.searchParams.append("champion", hash);
 
-    }, [hash, playerKind]);
+    const res = await fetch(url.toString());
+    if (res.status == 200) {
+      let data = await res.json();
+      console.log("fetch xp data is: ", data);
+      // setLastQueryIdx((lastQueryIdx) => lastQueryIdx + data.length);
+      // setBattleVAAs(battleVAAs => [...battleVAAs, ...data]);
+      setBattleVAAs(data);
+    }
+    setIsLoading(false);
+  };
 
-    const getXP = async (hash: string) => {
-        setIsLoading(true);
-        let url = new URL(serverBaseURL + "battles");
-        url.searchParams.append("chain", userNetworkName);
-        url.searchParams.append("champion", hash);
+  const getVotes = async (hash: string) => {
+    setIsLoading(true);
+    console.log("getting votes");
+    let url = new URL(serverBaseURL + "votes");
+    url.searchParams.append("chain", userNetworkName);
+    url.searchParams.append("champion", hash);
 
-        const res = await fetch(url.toString());
-        if (res.status == 200) {
-            let data = await res.json();
-            console.log("fetch xp data is: ", data);
-            // setLastQueryIdx((lastQueryIdx) => lastQueryIdx + data.length);
-            // setBattleVAAs(battleVAAs => [...battleVAAs, ...data]);
-            setBattleVAAs(data);
-        }
-        setIsLoading(false);
+    const res = await fetch(url.toString());
+    console.log(res);
+    if (res.status == 200) {
+      try {
+        let data = await res.json();
+        console.log("fetch votes data is: ", data);
+        setVoteVAAs(data);
+      } catch (e) {
+        console.log(e);
+      }
+    }
+    setIsLoading(false);
+  };
+
+  const router = useRouter();
+
+  const onClaimXP = async (seq: string) => {
+    setDisabled(true);
+    console.log("submitting xp for seq", seq);
+
+    const emitterAddr = String(await contract.getMessengerAddr())
+      .substring(2)
+      .padStart(64, "0");
+    console.log("emitter addr eth", emitterAddr);
+
+    let url = `http://localhost:7071/v1/signed_vaa/${
+      usersNetwork.wormholeChainId
+    }/${emitterAddr}/${seq.toString()}`;
+
+    // console.log(url);
+    let response = await fetch(url);
+    // console.log("fetched", response);
+    let data = await response.json();
+
+    console.log("got data for claim xp", data);
+
+    try {
+      await (
+        await contract.claimXP(hash, Buffer.from(data.vaaBytes, "base64"))
+      ).wait();
+      let url = new URL(serverBaseURL + "removebattle");
+      url.searchParams.append("chain", userNetworkName);
+      url.searchParams.append("champion", hash);
+      url.searchParams.append("seq", seq);
+
+      const res = await fetch(url.toString());
+      if (res.status == 200) {
+        console.log("successfully removed seq", seq);
+      }
+    } catch (e) {
+      console.log(e);
+      if (e && e.data && e.data.data) window.alert(e.data.data.reason);
+      setDisabled(false);
     }
 
-    const getVotes = async (hash: string) => {
-        setIsLoading(true);
-        console.log("getting votes")
-        let url = new URL(serverBaseURL + "votes");
-        url.searchParams.append("chain", userNetworkName);
-        url.searchParams.append("champion", hash);
+    console.log("finished submitting xp");
 
-        const res = await fetch(url.toString());
-        console.log(res)
-        if (res.status == 200) {
-            try {
-                let data = await res.json();
-                console.log("fetch votes data is: ", data);
-                setVoteVAAs(data);
-            } catch (e) {
-                console.log(e);
-            }
-        }
-        setIsLoading(false);
+    router.reload();
+  };
+
+  const onClaimVote = async (seq: string) => {
+    setDisabled(true);
+    console.log("submitting vote for seq", seq);
+
+    const emitterAddr = String(await contract.getMessengerAddr())
+      .substring(2)
+      .padStart(64, "0");
+    console.log("emitter addr eth", emitterAddr);
+
+    let url = `http://localhost:7071/v1/signed_vaa/${
+      usersNetwork.wormholeChainId
+    }/${emitterAddr}/${seq.toString()}`;
+
+    // console.log(url);
+    let response = await fetch(url);
+    // console.log("fetched", response);
+    let data = await response.json();
+
+    console.log("got data for claim vote", data);
+
+    try {
+      await (
+        await contract.audienceClaimPoints(Buffer.from(data.vaaBytes, "base64"))
+      ).wait();
+    } catch (e) {
+      console.log(e);
+      if (e && e.data && e.data.data) window.alert(e.data.data.reason);
+      else window.alert("Unable to claim Vote vaa.");
+      setDisabled(false);
     }
 
-    const router = useRouter();
+    console.log("finished claiming vote");
 
-    const onClaimXP = async (seq: string) => {
-        setDisabled(true);
-        console.log("submitting xp for seq", seq);
+    router.reload();
+  };
 
-        const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0");
-        console.log("emitter addr eth", emitterAddr);
-
-        let url = `http://localhost:7071/v1/signed_vaa/${usersNetwork.wormholeChainId
-            }/${emitterAddr}/${seq.toString()}`;
-    
-        // console.log(url);
-        let response = await fetch(url);
-        // console.log("fetched", response);
-        let data = await response.json();
-
-        console.log("got data for claim xp", data)
-
-        try {
-            await (await contract.claimXP(hash, Buffer.from(data.vaaBytes, 'base64'))).wait();
-            let url = new URL(serverBaseURL + "removebattle");
-            url.searchParams.append("chain", userNetworkName);
-            url.searchParams.append("champion", hash);
-            url.searchParams.append("seq", seq);
-
-            const res = await fetch(url.toString()); 
-            if (res.status == 200) {
-                console.log("successfully removed seq", seq);
-            }
-        } catch (e) {
-            console.log(e);
-            if (e && e.data && e.data.data)
-                window.alert(e.data.data.reason);
-            setDisabled(false);
-
-        }
-
-        console.log("finished submitting xp");
-
-        router.reload();
-    }
-
-    const onClaimVote = async (seq: string) => {
-        setDisabled(true);
-        console.log("submitting vote for seq", seq);
-
-        const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0");
-        console.log("emitter addr eth", emitterAddr);
-
-        let url = `http://localhost:7071/v1/signed_vaa/${usersNetwork.wormholeChainId
-            }/${emitterAddr}/${seq.toString()}`;
-    
-        // console.log(url);
-        let response = await fetch(url);
-        // console.log("fetched", response);
-        let data = await response.json();
-
-        console.log("got data for claim vote", data)
-
-        try {
-            await (await contract.audienceClaimPoints(Buffer.from(data.vaaBytes, 'base64'))).wait();
-        } catch (e) {
-            console.log(e);
-            if (e && e.data && e.data.data)
-                window.alert(e.data.data.reason);
-            else 
-                window.alert("Unable to claim Vote vaa.");
-            setDisabled(false);
-        }
-
-        console.log("finished claiming vote");
-
-        router.reload();
-    }
-
-
-    return <>
-        <div className="overflow-hidden rounded shadow-lg">
-            <div className="px-6 py-4">
-                <div className="font-bold text-l">Claim Your {playerKind == "fighter"? "XP" : "Votes"} Here</div>
-                <p className="mt-3 text-center text-gray-700 grid grid-cols-2 gap-5">
-                    { playerKind == "fighter" ?
-                        <>
-                        {battleVAAs.map((vaa) => {
-                            return <button
-                                className={disabled ?
-                                    "bg-blue-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
-                                    : "btn btn-blue"}
-                                disabled={disabled}
-                                onClick={() => onClaimXP(vaa)}
-                            >
-                                Battle VAA {vaa}
-                            </button>
-                        })}
-                        </> :
-                        <>
-                        {voteVAAs.map((vaa) => {
-                            return <button
-                                className={disabled ?
-                                    "bg-blue-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
-                                    : "btn btn-blue"}
-                                disabled={disabled}
-                                onClick={() => onClaimVote(vaa)}
-                            >
-                                Vote VAA {vaa}
-                            </button>
-                        })}
-                        </>
-                    }
-                </p>
-            </div>
+  return (
+    <>
+      <div className="overflow-hidden rounded shadow-lg">
+        <div className="px-6 py-4">
+          <div className="font-bold text-l">
+            Claim Your {playerKind == "fighter" ? "XP" : "Votes"} Here
+          </div>
+          <p className="mt-3 text-center text-gray-700 grid grid-cols-2 gap-5">
+            {playerKind == "fighter" ? (
+              <>
+                {battleVAAs.map((vaa) => {
+                  return (
+                    <button
+                      className={
+                        disabled
+                          ? "bg-blue-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
+                          : "btn btn-blue"
+                      }
+                      disabled={disabled}
+                      onClick={() => onClaimXP(vaa)}
+                    >
+                      Battle VAA {vaa}
+                    </button>
+                  );
+                })}
+              </>
+            ) : (
+              <>
+                {voteVAAs.map((vaa) => {
+                  return (
+                    <button
+                      className={
+                        disabled
+                          ? "bg-blue-500 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed"
+                          : "btn btn-blue"
+                      }
+                      disabled={disabled}
+                      onClick={() => onClaimVote(vaa)}
+                    >
+                      Vote VAA {vaa}
+                    </button>
+                  );
+                })}
+              </>
+            )}
+          </p>
         </div>
+      </div>
     </>
-}
+  );
+};
 
 export default ChampionXP;

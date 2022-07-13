@@ -14,4 +14,3 @@ export const isErc721 = makeInterfaceChecker(0x80ac58cd);
 export const isErc721Metadata = makeInterfaceChecker(0x5b5e139f);
 // function to check if a given `address` corresponds to a contract that implements ERC 721 with extension "Enumerable"
 export const isErc721Enumerable = makeInterfaceChecker(0x780e9d63);
-

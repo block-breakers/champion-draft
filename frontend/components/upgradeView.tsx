@@ -1,9 +1,8 @@
-
 import * as ethers from "ethers";
 import { BattleInfo } from "./battleStarter";
 
 type UpgradeViewProps = {
-  provider: ethers.providers.Web3Provider
+  provider: ethers.providers.Web3Provider;
 };
 
 const UpgradeView = ({ provider }: UpgradeViewProps) => {
@@ -19,15 +18,21 @@ const UpgradeView = ({ provider }: UpgradeViewProps) => {
         <tbody>
           {battleEvents.map((event) => (
             <tr>
-              <td className="px-2 text-center">{event.args.damageByHash.toString()}</td>
-              <td className="px-2 text-center">{event.args.damage.toString()}</td>
+              <td className="px-2 text-center">
+                {event.args.damageByHash.toString()}
+              </td>
+              <td className="px-2 text-center">
+                {event.args.damage.toString()}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div className="font-bold">Winner: </div>{battleOutcome.args.winnerHash.toString()}
+      <div className="font-bold">Winner: </div>
+      {battleOutcome.args.winnerHash.toString()}
       <br />
-      <div className="font-bold">Loser: </div>{battleOutcome.args.loserHash.toString()}
+      <div className="font-bold">Loser: </div>
+      {battleOutcome.args.loserHash.toString()}
     </div>
   );
 };
