@@ -2,12 +2,18 @@ import * as ethers from "ethers";
 import { useEffect, useState } from "react";
 import { useTimer } from "react-timer-hook";
 import Countdown from "./countdown";
+import xdappConfig from "../../xdapp.config.json";
+import evmAbi from "../../chains/evm/out/CoreGame.sol/CoreGame.json";
 
-type RoundsViewProps = {
-  contract: ethers.Contract;
-};
+type RoundsViewProps = {};
 
-const RoundsView = ({ contract }: RoundsViewProps) => {
+const RoundsView = ({}: RoundsViewProps) => {
+  const contract = new ethers.Contract(
+    xdappConfig.networks.evm0.deployedAddress,
+    evmAbi.abi as unknown as ethers.ContractInterface,
+    new ethers.providers.JsonRpcProvider("http://localhost:8545")
+  );
+
   const [timeLeft, setTimeLeft] = useState(new Date());
   const [roundStr, setRoundStr] = useState("Waiting for update...");
   const [round, setRound] = useState(-1);
@@ -15,11 +21,13 @@ const RoundsView = ({ contract }: RoundsViewProps) => {
 
   useEffect(() => {
     if (contract) {
+      console.log("Finding time left");
       findTimeLeft();
     }
-  }, [contract]);
+  }, []);
 
   const findTimeLeft = async () => {
+    console.log("Getting time left in round");
     const t = await contract.getTimeLeftInRound();
     console.log("TIME IS", t);
     const time = new Date();
@@ -55,7 +63,7 @@ const RoundsView = ({ contract }: RoundsViewProps) => {
   }
 
   return (
-    <div className="text-center text-3xl p-8">
+    <div className="p-8 text-3xl text-center">
       <div>
         Round: {roundStr}{" "}
         {round != -1 && (
