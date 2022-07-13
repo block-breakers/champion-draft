@@ -39,7 +39,9 @@ const ChampionCard = ({champion, serverBaseURL, networkName, isSelf, buttonOnCli
 
     useEffect(() => {
         let url = "http://localhost:5000/metadataevm?id=";
-        url += champion.championHash.toHexString().substring(0,3) == "0x7" ? "1" : "0";
+        // url += champion.championHash.toHexString().substring(0,3) == "0x7" ? "1" : "0";
+        let uriArr = champion.uri.split("/");
+        url += uriArr[uriArr.length-1]
         console.log("URL IS", url)
         fetch(url).then((res) => {
             res.json().then((data) => {

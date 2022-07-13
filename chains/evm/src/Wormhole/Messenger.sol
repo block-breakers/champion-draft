@@ -20,11 +20,13 @@ contract Messenger {
     }
 
     function sendMsg(bytes memory str) public returns (uint64 sequence) {
+        require(msg.sender == owner, "Only owner can receive messages!");
         sequence = core_bridge.publishMessage(nonce, str, 1);
         nonce = nonce+1;
     }
 
     function receiveEncodedMsg(bytes memory encodedMsg) public view returns (string memory) {
+        require(msg.sender == owner, "Only owner can receive messages!");
         (IWormhole.VM memory vm, bool valid, string memory reason) = core_bridge.parseAndVerifyVM(encodedMsg);
         
         //1. Check Wormhole Guardian Signatures
@@ -44,6 +46,7 @@ contract Messenger {
     }
 
     function receiveEncodedMsgOnce(bytes memory encodedMsg) public view returns (string memory, bytes32 vm_hash) {
+        require(msg.sender == owner, "Only owner can receive messages!");
         (IWormhole.VM memory vm, bool valid, string memory reason) = core_bridge.parseAndVerifyVM(encodedMsg);
         
         //1. Check Wormhole Guardian Signatures
