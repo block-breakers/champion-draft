@@ -1,13 +1,14 @@
 import * as ethers from "ethers";
 import { useEffect, useState } from "react";
 import { Network } from "../pages";
+import { Connection, getChampionInfo } from "../util/chainConnection";
 import * as storage from "../util/storage";
 import ChampionCard from "./championCard";
 import MetamaskButton from "./metamaskButton";
 import TokenSelector from "./tokenSelector";
 
 type ChampionRegistrarProps = {
-  provider: ethers.providers.Web3Provider;
+  connection: Connection;
   network: Network;
   abi: any;
   championHash: string | null;
@@ -16,24 +17,17 @@ type ChampionRegistrarProps = {
 };
 
 const ChampionRegistrar = ({
-  provider,
+  connection,
   network,
   abi,
   championHash,
   setChampionHash,
   playerKind,
 }: ChampionRegistrarProps) => {
-  const [walletConnected, setWalletConnected] = useState<boolean>(false);
   const [championData, setChampionData] = useState<any | null>(null);
 
   const getChampionData = async () => {
-    const contract = new ethers.Contract(
-      network.deployedAddress,
-      abi,
-      provider.getSigner()
-    );
-    const champion = await contract.champions(championHash);
-    console.log("getting champion data", champion);
+    const champion = await getChampionInfo(connection, championHash);
     setChampionData(champion);
   };
 
@@ -72,9 +66,9 @@ const ChampionRegistrar = ({
     <div className="">
       {championData !== null ? (
         <div className="flex flex-col justify-center">
-          <ChampionCard champion={championData} isSelf={true} vaa="" />
+          <ChampionCard champion={championData} isSelf={true} />
           <button
-            className="bg-gray-500 text-white font-bold py-2 px-4 rounded"
+            className="px-4 py-2 font-bold text-white bg-gray-500 rounded"
             onClick={() => {
               storage.removeChampionHash();
               storage.removeDraftHash();
@@ -94,21 +88,12 @@ const ChampionRegistrar = ({
             </p>
             <p className="text-center">Want to change that?</p>
             <div className="flex items-center h-1/2">
-              {walletConnected ? (
-                <>
-                  {playerKind == "fighter" && (
-                    <TokenSelector
-                      provider={provider}
-                      abi={abi}
-                      network={network}
-                      setChampionHash={setChampionHash}
-                    />
-                  )}
-                </>
-              ) : (
-                <MetamaskButton
-                  setConnected={(b) => setWalletConnected(b)}
-                  provider={provider}
+              {playerKind == "fighter" && (
+                <TokenSelector
+                  connection={connection}
+                  abi={abi}
+                  network={network}
+                  setChampionHash={setChampionHash}
                 />
               )}
             </div>
