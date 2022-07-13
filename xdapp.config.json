@@ -6,7 +6,7 @@
             "rpc": "http://localhost:8545",
             "privateKey": "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
             "bridgeAddress": "0xC89Ce4735882C9F0f0FE26686c53074E09B0D550",
-            "deployedAddress": "0xceefd27e0542afa926b87d23936c79c276a48277",
+            "deployedAddress": "0x6f84742680311cef5ba42bc10a71a4708b4561d1",
             "emittedVAAs": []
         },
         "evm1": {
@@ -15,11 +15,18 @@
             "rpc": "http://localhost:8546",
             "privateKey": "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
             "bridgeAddress": "0xC89Ce4735882C9F0f0FE26686c53074E09B0D550",
-            "deployedAddress": "0xceefd27e0542afa926b87d23936c79c276a48277",
+            "deployedAddress": "0xeea2fc1d255fd28aa15c6c2324ad40b03267f9c5",
             "emittedVAAs": []
         }
     },
     "wormhole": {
         "restAddress": "http://localhost:7071"
+    },
+    "server": {
+        "baseURL": "http://localhost:5000/",
+        "redis": {
+            "host": "localhost",
+            "port": 6379
+        }
     }
 }
