@@ -36,7 +36,6 @@ export const getUsersNetworkIdentifier = async (
   }
 };
 
-
 export type Connection =
   | {
       kind: "evm";
@@ -60,14 +59,17 @@ export const useChainConnection = () => {
   const [usersNetwork, setUsersNetwork] = useState<Network | null>(null);
 
   const getUsersNetwork = async () => {
-    if (connection === null) {
-      return;
-    }
-    if (connection.kind === "solana") {
+    if (solanaProvider !== undefined) {
       setUsersNetwork(xdappConfig.networks.solana);
     }
-    if (connection.kind === "evm") {
-      let identifier = await getUsersNetworkIdentifier(connection.provider);
+    if (
+      ethProvider.status === "connected" &&
+      ethProvider.ethereum !== undefined
+    ) {
+      const provider = new ethers.providers.Web3Provider(
+        ethProvider.ethereum.provider
+      );
+      let identifier = await getUsersNetworkIdentifier(provider);
       setUsersNetwork(xdappConfig.networks[identifier]);
     }
   };
@@ -104,6 +106,7 @@ export const useChainConnection = () => {
       ethProvider.status === "connected" &&
       ethProvider.ethereum !== undefined
     ) {
+        console.log("using eth");
       setConnection({
         provider: new ethers.providers.Web3Provider(
           ethProvider.ethereum.provider
@@ -121,7 +124,8 @@ export const useChainConnection = () => {
       anchorCompatibleWallet !== undefined
     ) {
       const provider = new anchor.AnchorProvider(
-        new anchor.web3.Connection(solanaProvider.wallet?.adapter.url),
+        new anchor.web3.Connection(xdappConfig.networks.solana.rpc),
+
         anchorCompatibleWallet,
         {}
       );
@@ -136,10 +140,11 @@ export const useChainConnection = () => {
         ),
         network: usersNetwork,
       });
-    }
-  });
+    } 
+  }, [solanaProvider, ethProvider, usersNetwork, ]);
 
-  return setConnection;
+
+  return connection;
 };
 
 export const registerNft = async (
@@ -186,6 +191,7 @@ export const registerNft = async (
       new anchor.web3.PublicKey(xdappConfig.networks.solana.bridgeAddress)
     );
     const tx = await orchestrator.registerNft(owner, message_account);
+    console.log("RegisterNFT tx completed");
 
     const [championPda] = solana.PublicKey.findProgramAddressSync(
       [anchor.utils.bytes.utf8.encode("champion"), owner.publicKey.toBuffer()],
@@ -195,7 +201,7 @@ export const registerNft = async (
     await new Promise((r) => setTimeout(r, 5000));
 
     console.log(
-      "Champion:",
+      "Registered Champion:",
       await connection.program.account.championAccount.fetch(championPda)
     );
 
@@ -203,4 +209,3 @@ export const registerNft = async (
   }
   return "";
 };
-
