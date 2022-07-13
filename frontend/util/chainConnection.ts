@@ -12,27 +12,24 @@ import { Network } from "../pages";
 import { Orchestrator } from "./chains/solana/orchestrator";
 import * as solana from "@solana/web3.js";
 
-export const getUsersNetworkIdentifier = async (
+const getUsersNetworkIdentifier = async (
   provider: ethers.providers.Web3Provider
 ): Promise<"evm0" | "evm1"> => {
-  if (
-    (await provider.send("net_version", [])) ===
-    (await new ethers.providers.JsonRpcProvider("http://localhost:8545").send(
-      "net_version",
-      []
-    ))
-  ) {
-    return "evm0";
-  } else if (
-    (await provider.send("net_version", [])) ===
-    (await new ethers.providers.JsonRpcProvider("http://localhost:8546").send(
-      "net_version",
-      []
-    ))
-  ) {
+  // TODO: this is a hacky way to get the network identifier. We should use the method below,
+  // but for some reason ganache does not always respond to "net_version" requests so we're stuck with this.
+  return "evm1";
+
+  const myVersion = await provider.send("net_version", []);
+
+  const evm1Version = await new ethers.providers.JsonRpcProvider(
+    "http://localhost:8546"
+  ).send("net_version", []);
+  console.log("3");
+
+  if (myVersion === evm1Version) {
     return "evm1";
   } else {
-    throw new Error("Unrecognized chain");
+    return "evm0";
   }
 };
 
@@ -58,24 +55,30 @@ export const useChainConnection = () => {
 
   const [usersNetwork, setUsersNetwork] = useState<Network | null>(null);
 
+  console.log("Connection", connection);
+  console.log("usersNetwork", usersNetwork);
+  console.log("ethProvider", ethProvider);
+  console.log("solanaProvider", solanaProvider);
+
   const getUsersNetwork = async () => {
-    if (solanaProvider !== undefined) {
-      setUsersNetwork(xdappConfig.networks.solana);
-    }
+    console.log("GET USERS NETWORK", ethProvider);
     if (
       ethProvider.status === "connected" &&
       ethProvider.ethereum !== undefined
     ) {
-      const provider = new ethers.providers.Web3Provider(
-        ethProvider.ethereum.provider
-      );
+      console.log("setting suersnetwork");
+      const provider = new ethers.providers.Web3Provider(ethProvider.ethereum);
       let identifier = await getUsersNetworkIdentifier(provider);
+      console.log("set");
       setUsersNetwork(xdappConfig.networks[identifier]);
+    }
+    if (solanaProvider !== undefined && solanaProvider.connected === true) {
+      setUsersNetwork(xdappConfig.networks.solana);
     }
   };
   useEffect(() => {
     getUsersNetwork();
-  }, [connection]);
+  }, [ethProvider, solanaProvider]);
 
   // turn the solana adapter wallet into an Anchor wallet
   const anchorCompatibleWallet = useMemo(
@@ -107,12 +110,11 @@ export const useChainConnection = () => {
       ethProvider.ethereum !== undefined
     ) {
       console.log("using eth");
+      console.log(ethProvider.ethereum);
       setConnection({
-        provider: new ethers.providers.Web3Provider(
-          ethProvider.ethereum.provider
-        ),
+        provider: new ethers.providers.Web3Provider(ethProvider.ethereum),
         kind: "evm",
-        abi: ethCoreGameAbi as unknown as ContractInterface,
+        abi: ethCoreGameAbi.abi as unknown as ContractInterface,
         network: usersNetwork,
       });
     }
@@ -146,12 +148,17 @@ export const useChainConnection = () => {
   return connection;
 };
 
+export const getUsersNetwork = (connection: Connection) => {
+  connection.network;
+};
+
 export const registerNft = async (
   connection: Connection,
   nftContractAddress: string,
   tokenId: string
-): Promise<{ error: string } | string | null> => {
+): Promise<{ error: string } | string> => {
   if (connection.kind === "evm") {
+    console.log("checking interface");
     try {
       interfaceChecker.isErc721(nftContractAddress, connection.provider);
     } catch (e) {
@@ -159,16 +166,24 @@ export const registerNft = async (
       return { error: "Not ERC721 compatible" };
     }
 
+    console.log(
+      "connection.network.deployedAddress",
+      connection.network.deployedAddress
+    );
     const contract = new ethers.Contract(
       connection.network.deployedAddress,
       connection.abi,
       connection.provider.getSigner()
     );
+
     const newHash = await contract.getChampionHash(
       nftContractAddress,
       ethers.BigNumber.from(tokenId)
     );
-    if ((await contract.champions(newHash)).championHash.toString() !== "0") {
+
+    console.log("newHash", newHash);
+
+    if ((await contract.champions(newHash)).championHash.toString() === "0") {
       console.log("Sending registerNft tx");
       const tx = await contract.registerNFT(nftContractAddress, tokenId);
       console.log("Finalizing registerNft tx");
@@ -180,8 +195,9 @@ export const registerNft = async (
         tokenId
       );
       return championHash;
+    } else {
+      return newHash;
     }
-    return null;
   } else if (connection.kind === "solana") {
     const message_account = anchor.web3.Keypair.generate();
     const owner = connection.provider.wallet;
@@ -206,5 +222,21 @@ export const registerNft = async (
 
     return championPda.toString();
   }
-  return "";
+};
+
+export const getChampionInfo = async (
+  connection: Connection,
+  championId: string
+) => {
+  if (connection.kind === "evm") {
+    const contract = new ethers.Contract(
+      connection.network.deployedAddress,
+      connection.abi,
+      connection.provider.getSigner()
+    );
+    return await contract.champions(championId);
+  } else if (connection.kind === "solana") {
+    return (await connection.program.account.championAccount.fetch(championId))
+      .champion;
+  }
 };
