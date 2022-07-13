@@ -1,30 +1,15 @@
-
 import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import {
-  deriveAddress,
-  getPdaAssociatedTokenAddress,
-  makeReadOnlyAccountMeta,
-  makeWritableAccountMeta,
-} from "./helpers/utils";
 import keccak256 from "keccak256";
 import { CoreGame } from "../../../../chains/solana/target/types/core_game";
 import { PublicKey } from "@solana/web3.js";
 import { Wallet } from "@project-serum/anchor/dist/cjs/provider";
-import {
-  CHAIN_ID_SOLANA,
-  getEmitterAddressSolana,
-  parseSequencesFromLogSolana,
-  setDefaultWasm,
-  tryNativeToHexString,
-  postVaaSolanaWithRetry,
-  importCoreWasm,
-  getEmitterAddressEth,
-} from "@certusone/wormhole-sdk";
+import * as solana from "@solana/web3.js";
 
-setDefaultWasm("node");
-
+function deriveAddress(seeds: (Buffer | Uint8Array)[], program: web3.PublicKey): web3.PublicKey {
+  return solana.PublicKey.findProgramAddressSync(seeds, program)[0];
+}
 
 export class Orchestrator {
   program: Program<CoreGame>;
@@ -89,7 +74,7 @@ export class Orchestrator {
       )
     );
 
-    return program.methods
+    return await program.methods
       .registerNft()
       .accounts({
         ...tx_accounts,
