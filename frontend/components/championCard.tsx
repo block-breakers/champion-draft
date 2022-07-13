@@ -113,7 +113,7 @@ const ChampionCard = ({
         </span>
         <SkillBar skills={xp} height={10} />
         <div className="text-xs truncate text-ellipsis">
-          Champion Hash: {champion.championHash.toHexString()}
+          Champion Hash: {champion.championHash.toHexString ? champion.championHash.toHexString() : champion.championHash.toString()}
         </div>
         <p className="text-xs truncate text-ellipsis">
           Owner Hash: {champion.owner.toString()}
