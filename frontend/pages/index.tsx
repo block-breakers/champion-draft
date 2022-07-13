@@ -5,7 +5,9 @@ import * as ethers from "ethers";
 import { useEffect, useState } from "react";
 import ChampionViewer from "../components/championViewer";
 import ChampionRegistrar from "../components/championRegistrar";
-import { getUsersNetworkIdentifier } from "../util/chainConnection";
+import {
+  useChainConnection,
+} from "../util/chainConnection";
 import ChampionUpgrade from "../components/championUpgrade";
 import { useRouter } from "next/router";
 import RoundsView from "../components/roundsView";
@@ -13,6 +15,7 @@ import ChampionXP from "../components/championXP";
 import * as storage from "../util/storage";
 
 export type Network = {
+  name: string;
   type: string;
   wormholeChainId: number;
   rpc: string;
@@ -68,43 +71,25 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
 
   const [playerKind, setPlayerKind] = useState<PlayerKind>("unjoined");
 
-  // set up provider
-  const [provider, setProvider] =
-    useState<ethers.providers.Web3Provider | null>(null);
-  useEffect(() => {
-    if (process.browser === false) {
-      return;
-    }
-    const provider = new ethers.providers.Web3Provider(
-      (window as any).ethereum
-    );
-    setProvider(provider);
-
-    setChampionHash(storage.fetchChampionHash());
-  }, []);
+  const connection = useChainConnection();
+  const provider = connection === null ? null : connection.provider;
 
   // figure out which chain the user is connecting from
   const [usersNetwork, setUsersNetwork] = useState<Network | null>(null);
-  const [usersNetworkName, setUsersNetworkName] = useState("");
-  const getUsersNetwork = async (
-    provider: ethers.providers.Web3Provider | null
-  ) => {
-    if (provider === null) {
-      return;
-    }
-    let identifier = await getUsersNetworkIdentifier(provider);
-    setUsersNetworkName(identifier);
-    console.log("Connecting from ", identifier);
-    setUsersNetwork(networks[identifier]);
-  };
   useEffect(() => {
-    getUsersNetwork(provider);
-  }, [provider]);
+    if (connection !== null) {
+      setUsersNetwork(connection.network);
+    }
+  }, [connection]);
 
   // set up contract
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   useEffect(() => {
-    if (provider === null || usersNetwork === null) {
+    if (
+      provider === null ||
+      usersNetwork === null ||
+      usersNetwork.type === "solana"
+    ) {
       return;
     }
     setContract(
@@ -139,6 +124,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       setDraftHash(null);
     }
   }, [draftHash, championHash]);
+
 
   // query contract to see if this audience memeber is already drafting
   useEffect(() => {
@@ -206,9 +192,9 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
       ) : (
         <div>
           <div className="min-w-full mb-10">
-            <RoundsView contract={contract} />
+            <RoundsView />
             {playerKind != "unjoined" && (
-              <div className="text-center text-xl">
+              <div className="text-xl text-center">
                 {playerKind == "fighter" ? "My Champion:" : "Current Draft:"}
               </div>
             )}
@@ -231,7 +217,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
               ) : (
                 <>
                   <ChampionRegistrar
-                    provider={provider}
+                    connection={connection}
                     abi={abi}
                     network={usersNetwork}
                     championHash={
@@ -244,6 +230,8 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
                     }
                     playerKind={playerKind}
                   />
+                  {connection?.kind === "evm" && (
+                  <>
                   <ChampionUpgrade
                     provider={provider}
                     abi={abi}
@@ -255,10 +243,12 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
                     contract={contract}
                     usersNetwork={usersNetwork}
                     serverBaseURL={serverBaseURL}
-                    userNetworkName={usersNetworkName}
+                    userNetworkName={usersNetwork.name}
                     hash={playerKind == "fighter" ? championHash : draftHash}
                     playerKind={playerKind}
                   />
+                  </>
+                  )}
                 </>
               )}
             </div>
