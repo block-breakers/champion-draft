@@ -12,13 +12,12 @@ use anchor_lang::solana_program::borsh::try_from_slice_unchecked;
 use anchor_lang::solana_program::instruction::Instruction;
 use anchor_lang::solana_program::program::invoke_signed;
 use anchor_lang::solana_program::system_instruction::transfer;
-use byteorder::{BigEndian, WriteBytesExt};
 use context::*;
 use data::*;
 use errors::MessengerError;
 use hex::decode;
 use sha3::Digest;
-use std::io::{Cursor, Write};
+use std::io::Write;
 use std::str::FromStr;
 use wormhole::*;
 
@@ -29,18 +28,24 @@ pub mod core_game {
 
     use super::*;
 
+    /// registers  new NFT as a champion
     pub fn register_nft(ctx: Context<RegisterNft>) -> Result<()> {
         // TODO: check ownership of NFT
 
+        // hash some data about the registering use (for example their public key) and use that as
+        // the randomness we need to intialize the stats of a new champion.
         let champion_seed = calculate_hash(&ctx.accounts.champion_account.key());
         let champion = Champion::new(champion_seed as u32);
-        let payload: Vec<u8> = champion.into_evm_packed();
 
+        // serialize the champion into bytes based on the evm ABI format
+        let payload: Vec<u8> = champion.into_evm();
+
+        // save the champion to its PDA
         ctx.accounts.champion_account.champion = champion;
 
-        let nonce: u32 = 0;
-
+        // everything inside this block has to do with emitting the VAA
         {
+            let nonce: u32 = 0;
             //Look up fee
             let bridge_data: BridgeData =
                 try_from_slice_unchecked(&ctx.accounts.wormhole_config.data.borrow_mut())?;
@@ -107,13 +112,17 @@ pub mod core_game {
         Ok(())
     }
 
+    /// initiates a battle between a local champion and a champion contained in a VAA
     pub fn cross_chain_battle(
         ctx: Context<CrossChainBattle>,
         emitter_addr: String,
         chain_id: u16,
     ) -> Result<()> {
-        //Hash a VAA Extract and derive a VAA Key
+        // Deserialize a full VAA (including header) from bytes
         let vaa = PostedMessageData::try_from_slice(&ctx.accounts.core_bridge_vaa.data.borrow())?.0;
+
+        // everything in this block has to do with confirming the validity of the VAA
+        // (for example, that it came from the program that expect it to)
         {
             let serialized_vaa = serialize_vaa(&vaa);
 
@@ -144,30 +153,29 @@ pub mod core_game {
             }
         }
 
+        // use the slot number as a source of randomness
         let randomness = {
             let clock = Clock::get()?;
             let mut hasher = sha3::Keccak256::default();
             hasher.write(clock.slot.to_be_bytes().as_slice()).unwrap();
             hasher.finalize().into()
         };
-        msg!("big vaa {:?}" ,vaa);
-
+        
+        // deserialize the foreign champion from the bytes stored in the VAA's payload
         let payload = vaa.payload;
-        let foreign_champion = Champion::from_evm_packed(&payload);
+        let foreign_champion = Champion::from_evm(&payload);
+
+        // get the local champion from the PDA account
         let local_champion = &ctx.accounts.local_champion_account.champion;
 
+        // simulate the battle
         let battle_result = local_champion.battle(&foreign_champion, randomness)?;
 
         // TODO: replace with anchor event emitter
         msg!("Battle Result: {:?}", battle_result);
+
         // TODO: emit battle result VAA
 
-        Ok(())
-    }
-
-    pub fn debug(ctx: Context<Debug>) -> Result<()> {
-        let vaa = PostedMessageData::try_from_slice(*ctx.accounts.core_bridge_vaa.data.borrow())?.0;
-        msg!("{:?}", vaa);
         Ok(())
     }
 }

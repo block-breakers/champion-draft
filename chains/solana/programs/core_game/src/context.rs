@@ -1,11 +1,8 @@
 use std::str::FromStr;
 use crate::data::*;
 use crate::constants::CORE_BRIDGE_ADDRESS;
-use crate::wormhole::*;
-use hex::decode;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::TokenAccount;
 
 #[error_code]
 pub enum ChampionDraftError {
@@ -32,12 +29,21 @@ pub struct RegisterNft<'info> {
     #[account(mut)]
     pub wormhole_message_account: Signer<'info>,
 
-    /// the token account that houses the user's NFT
+    // TODO: make this instruction take a token account as an argument so we can use the user's NFT
+    // /// the token account that houses the user's NFT
     // #[account(constraint = token_account.owner == owner.key() @ ChampionDraftError::NotOwnerOfNft )]
     // pub token_account: Account<'info, TokenAccount>,
+    
     pub system_program: Program<'info, System>,
 
-    // accounts needed by the wormhole CPI
+    // These are system accounts
+    /// CHECK: checked by callee
+    pub clock: AccountInfo<'info>,
+    /// CHECK: checked by callee
+    pub rent: AccountInfo<'info>,
+
+    // The rest of these accounts are checked by the callee (wormhole core bridge) so we don't need
+    // constraints.
     
     /// CHECK: checked by callee
     #[account(
@@ -59,10 +65,6 @@ pub struct RegisterNft<'info> {
     /// CHECK: checked by callee
     #[account(mut)]
     pub wormhole_sequence: AccountInfo<'info>,
-    /// CHECK: checked by callee
-    pub clock: AccountInfo<'info>,
-    /// CHECK: checked by callee
-    pub rent: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
@@ -71,24 +73,10 @@ pub struct CrossChainBattle<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
-    /// the account that corresponds to the local champion. This is champion was originally
+    /// the account that corresponds to the local champion. This champion was originally
     /// registered on this chain, whereas the vaa champion could have been registered on this chain
     /// or another chain
     pub local_champion_account: Account<'info, ChampionAccount>,
-
-    // #[account(
-    //     init,
-    //     signer,
-    //     seeds=[
-    //         &decode(&emitter_addr.as_str()).unwrap()[..],
-    //         chain_id.to_be_bytes().as_ref(),
-    //         (PostedMessageData::try_from_slice(&core_bridge_vaa.data.borrow())?.0).sequence.to_be_bytes().as_ref()
-    //     ],
-    //     payer=payer,
-    //     bump,
-    //     space=8
-    // )]
-    // pub processed_vaa: Account<'info, ProcessedVAA>,
 
     /// This requires some fancy hashing, so confirm it's derived address in the function itself.
     #[account(
@@ -98,14 +86,4 @@ pub struct CrossChainBattle<'info> {
     pub core_bridge_vaa: AccountInfo<'info>,
 }
 
-#[derive(Accounts)]
-pub struct Debug<'info>{
-    #[account()]
-    pub owner: Signer<'info>,
-    #[account(
-        constraint = core_bridge_vaa.to_account_info().owner == &Pubkey::from_str(CORE_BRIDGE_ADDRESS).unwrap()
-    )]
-    /// CHECK: This account is owned by Core Bridge so we trust it
-    pub core_bridge_vaa: AccountInfo<'info>,
-}
 

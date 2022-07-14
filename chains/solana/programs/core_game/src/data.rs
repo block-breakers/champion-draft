@@ -83,6 +83,7 @@ impl Champion {
         }
     }
 
+    /// simulate a battle between two champions using `randomness` as a source of randomness
     pub fn battle(&self, other: &Self, randomness: [u8; 32]) -> Result<BattleOutcome> {
         // gets a random byte from the input source of randomness
         let mut get_random_byte = {
@@ -154,6 +155,7 @@ impl Champion {
             .try_into()
             .unwrap();
 
+        // determine who won the battle and calculate XP payouts
         if damage_by_self >= damage_by_other {
             let mut winner_xp = (damage_by_other * 50) / (damage_by_self + damage_by_other);
             let mut loser_xp = 50 - winner_xp;
@@ -182,7 +184,9 @@ impl Champion {
         }
     }
 
-    pub fn from_evm_packed(vaa: &[u8]) -> Self {
+    /// turns bytes into a champion assuming that the bytes were serialized using the EVM
+    /// serialization standard
+    pub fn from_evm(vaa: &[u8]) -> Self {
         msg!("vaa: {:?}", vaa);
         // EVM pads each item to 32 bytes, so we can chunk the encoded vaa into 32 byte chunks
         let chunks: Vec<_> = vaa.chunks(32).collect();
@@ -255,7 +259,8 @@ impl Champion {
         return champion;
     }
 
-    pub fn into_evm_packed(&self) -> Vec<u8> {
+    /// serializes a champion into bytes following the EVM abi serialization standard
+    pub fn into_evm(&self) -> Vec<u8> {
         let mut vaa = vec![0; 32 * 18];
         let mut vaa_chunks = vaa.chunks_mut(32);
         vaa_chunks
