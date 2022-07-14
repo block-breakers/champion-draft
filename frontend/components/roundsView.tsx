@@ -16,7 +16,9 @@ const RoundsView = ({ contract }: RoundsViewProps) => {
 
     useEffect(() => {
         if (contract) {
-            findTimeLeft();
+            contract.signer.getAddress().then(() => {
+                findTimeLeft();
+            }).catch((e) => console.log("Please connect your wallet"));
         }
     }, [contract]);
 

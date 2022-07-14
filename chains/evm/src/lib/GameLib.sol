@@ -33,13 +33,13 @@ library GameLib {
         uint256 loserHash;
         uint32 winnerXP;
         uint32 loserXP;
-        uint timestamp;
+        uint256 timestamp;
     }
 
     struct AudienceMember {
-        uint currentDraft;
-        uint timestamp;
-        uint points;
+        uint256 currentDraft;
+        uint256 timestamp;
+        uint256 points;
     }
 
     // current max turns allowed: 15
