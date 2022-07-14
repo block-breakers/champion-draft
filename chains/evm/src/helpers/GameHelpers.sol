@@ -121,7 +121,7 @@ contract GameHelpers is GameStorage {
 
     // TODO: make function private after testing
     function mintIdVaa(GameLib.Champion memory c) public pure returns (bytes memory) {
-        return abi.encode(c);
+        return abi.encodePacked(c);
     }
 
     function decodeIdVaa(bytes memory b)

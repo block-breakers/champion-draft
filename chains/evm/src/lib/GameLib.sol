@@ -21,11 +21,11 @@ library GameLib {
     struct Champion {
         uint256 championHash;
         address owner;
-        string uri;
         uint64 vaaSeq;
         uint32 round;
         ChampionStats stats;
         AudienceVotes votes;
+        string uri;
     }
 
     struct BattleOutcome {
