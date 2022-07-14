@@ -648,6 +648,11 @@
   dependencies:
     "node-gyp-build" "^4.3.0"
 
+"byteify@^2.0.10":
+  "integrity" "sha512-clrE0NtRB/YwjQcmrUU9qpxRIQ5Jc1HGedv6/LWd08upE0FV0S4YvPBkmKEsTaquqGmhx34LkRBO+lXpTgwYgw=="
+  "resolved" "https://registry.npmjs.org/byteify/-/byteify-2.0.10.tgz"
+  "version" "2.0.10"
+
 "call-bind@^1.0.0":
   "integrity" "sha512-7O+FbCihrB5WGbFYesctwmTKae6rOiIzmz1icreWJ+0aA7LJfuqhEso2T9ncpcFtzMQtzXf2QGGueWJGTYsqrA=="
   "resolved" "https://registry.npmjs.org/call-bind/-/call-bind-1.0.2.tgz"

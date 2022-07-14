@@ -1,22 +1,25 @@
+mod constants;
 mod context;
 mod data;
+mod errors;
 mod util;
 mod wormhole;
-mod constants;
 
+use crate::constants::CORE_BRIDGE_ADDRESS;
 use crate::util::calculate_hash;
 use anchor_lang::prelude::*;
-use context::*;
-use data::*;
-use wormhole::*;
 use anchor_lang::solana_program::borsh::try_from_slice_unchecked;
 use anchor_lang::solana_program::instruction::Instruction;
 use anchor_lang::solana_program::program::invoke_signed;
 use anchor_lang::solana_program::system_instruction::transfer;
-use byteorder::{BigEndian, WriteBytesExt};
+use context::*;
+use data::*;
+use errors::MessengerError;
+use hex::decode;
 use sha3::Digest;
-use std::io::{Cursor, Write};
+use std::io::Write;
 use std::str::FromStr;
+use wormhole::*;
 
 declare_id!("A9KvbP1zccZRUYcTjyCYQJ7n1iWKBcR8yDeGTj3mDphV");
 
@@ -25,36 +28,24 @@ pub mod core_game {
 
     use super::*;
 
+    /// registers  new NFT as a champion
     pub fn register_nft(ctx: Context<RegisterNft>) -> Result<()> {
-        // let cpi_accounts = wormhole_solana_sdk::cpi::accounts::PostMessage {
-        //     payer: ctx.accounts.owner.to_account_info(),
-        //     wormhole_message_key: ctx.accounts.wormhole_message_account.to_account_info(),
-        //     emitter_account: ctx.accounts.emitter_account.clone(),
-        //     core_bridge: ctx.accounts.core_bridge.clone(),
-        //     wormhole_config: ctx.accounts.wormhole_config.clone(),
-        //     wormhole_fee_collector: ctx.accounts.wormhole_fee_collector.clone(),
-        //     wormhole_sequence: ctx.accounts.wormhole_sequence.clone(),
-        //     clock: ctx.accounts.clock.clone(),
-        //     rent: ctx.accounts.rent.clone(),
+        // TODO: check ownership of NFT
 
-        //     system_program: ctx.accounts.system_program.to_account_info(),
-        // };
+        // hash some data about the registering use (for example their public key) and use that as
+        // the randomness we need to intialize the stats of a new champion.
+        let champion_seed = calculate_hash(&ctx.accounts.champion_account.key());
+        let champion = Champion::new(champion_seed as u32);
 
-        // let cpi_ctx = CpiContext::new(ctx.accounts.sdk_program.to_account_info(), cpi_accounts);
+        // serialize the champion into bytes based on the evm ABI format
+        let payload: Vec<u8> = champion.into_evm();
 
-        // wormhole_solana_sdk::cpi::post_message(
-        //     cpi_ctx,
-        //     id(),
-        //     ctx.accounts.core_bridge.key(),
-        //     b"abcdefgh".to_vec(),
-        //     0,
-        // )?;
+        // save the champion to its PDA
+        ctx.accounts.champion_account.champion = champion;
 
-
-        let payload: Vec<u8> = b"abcdefgh".to_vec();
-        let nonce: u32 = 0;
-
+        // everything inside this block has to do with emitting the VAA
         {
+            let nonce: u32 = 0;
             //Look up fee
             let bridge_data: BridgeData =
                 try_from_slice_unchecked(&ctx.accounts.wormhole_config.data.borrow_mut())?;
@@ -90,14 +81,14 @@ pub mod core_game {
                 data: (
                     wormhole::Instruction::PostMessage,
                     wormhole::PostMessageData {
-                        nonce: nonce,
-                        payload: payload,
+                        nonce,
+                        payload,
                         consistency_level: wormhole::ConsistencyLevel::Confirmed,
                     },
                 )
                     .try_to_vec()?,
             };
-            msg!("Invoking signed");
+
             invoke_signed(
                 &sendmsg_ix,
                 &[
@@ -118,47 +109,73 @@ pub mod core_game {
             )?;
         }
 
-        let champion_seed = calculate_hash(&ctx.accounts.champion_account.key());
-        // let champion_seed = calculate_hash(&(0xdeadbeef_u32));
-        ctx.accounts.champion_account.champion = Champion::new(champion_seed as u32);
         Ok(())
     }
 
+    /// initiates a battle between a local champion and a champion contained in a VAA
+    pub fn cross_chain_battle(
+        ctx: Context<CrossChainBattle>,
+        emitter_addr: String,
+        chain_id: u16,
+    ) -> Result<()> {
+        // Deserialize a full VAA (including header) from bytes
+        let vaa = PostedMessageData::try_from_slice(&ctx.accounts.core_bridge_vaa.data.borrow())?.0;
 
-    pub fn cross_chain_battle(ctx: Context<CrossChainBattle>) -> Result<()> {
-        ////Hash a VAA Extract and derive a VAA Key
-        //let vaa = PostedMessageData::try_from_slice(&ctx.accounts.core_bridge_vaa.data.borrow())?.0;
-        //let serialized_vaa = serialize_vaa(&vaa);
+        // everything in this block has to do with confirming the validity of the VAA
+        // (for example, that it came from the program that expect it to)
+        {
+            let serialized_vaa = serialize_vaa(&vaa);
 
-        //let mut h = sha3::Keccak256::default();
-        //h.write(serialized_vaa.as_slice()).unwrap();
-        //let vaa_hash: [u8; 32] = h.finalize().into();
+            let mut h = sha3::Keccak256::default();
+            h.write(serialized_vaa.as_slice()).unwrap();
+            let vaa_hash: [u8; 32] = h.finalize().into();
 
-        //let (vaa_key, _) = Pubkey::find_program_address(&[
-        //    b"PostedVAA",
-        //    &vaa_hash
-        //], &Pubkey::from_str(CORE_BRIDGE_ADDRESS).unwrap());
+            let (vaa_key, _) = Pubkey::find_program_address(
+                &[b"PostedVAA", &vaa_hash],
+                &Pubkey::from_str(CORE_BRIDGE_ADDRESS).unwrap(),
+            );
 
-        //if ctx.accounts.core_bridge_vaa.key() != vaa_key {
-        //    return err!(MessengerError::VAAKeyMismatch);
-        //}
+            if ctx.accounts.core_bridge_vaa.key() != vaa_key {
+                return err!(MessengerError::VAAKeyMismatch);
+            }
 
-        //// Already checked that the SignedVaa is owned by core bridge in account constraint logic
-        ////Check that the emitter chain and address match up with the vaa
-        //if vaa.emitter_chain != ctx.accounts.emitter_acc.chain_id ||
-        //   vaa.emitter_address != &decode(&ctx.accounts.emitter_acc.emitter_addr.as_str()).unwrap()[..] {
-        //    return err!(MessengerError::VAAEmitterMismatch)
-        //}
+            // Already checked that the SignedVaa is owned by core bridge in account constraint logic
+            // Check that the emitter chain and address match up with the vaa
+            msg!("vaa.emitter_chain = {:?}", vaa.emitter_chain);
+            msg!("vaa.emitter_address = {:?}", vaa.emitter_address);
+            msg!("chain_id = {:?}", chain_id);
+            msg!("emitter_addr = {:?}", emitter_addr);
 
-        //ctx.accounts.config.current_msg = String::from_utf8(vaa.payload).unwrap();
+            if vaa.emitter_chain != chain_id
+                || vaa.emitter_address != &decode(&emitter_addr.as_str()).unwrap()[..]
+            {
+                return err!(MessengerError::VAAEmitterMismatch);
+            }
+        }
+
+        // use the slot number as a source of randomness
+        let randomness = {
+            let clock = Clock::get()?;
+            let mut hasher = sha3::Keccak256::default();
+            hasher.write(clock.slot.to_be_bytes().as_slice()).unwrap();
+            hasher.finalize().into()
+        };
+        
+        // deserialize the foreign champion from the bytes stored in the VAA's payload
+        let payload = vaa.payload;
+        let foreign_champion = Champion::from_evm(&payload);
+
+        // get the local champion from the PDA account
+        let local_champion = &ctx.accounts.local_champion_account.champion;
+
+        // simulate the battle
+        let battle_result = local_champion.battle(&foreign_champion, randomness)?;
+
+        // TODO: replace with anchor event emitter
+        msg!("Battle Result: {:?}", battle_result);
+
+        // TODO: emit battle result VAA
 
         Ok(())
-    }
-
-    pub fn debug(ctx:Context<Debug>) -> Result<()> {
-        let vaa = PostedMessageData::try_from_slice(*ctx.accounts.core_bridge_vaa.data.borrow())?.0;
-        msg!("{:?}", vaa);
-        Ok(())  
     }
 }
-
