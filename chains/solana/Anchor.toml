@@ -2,7 +2,6 @@
 seeds = false
 [programs.localnet]
 core_game = "A9KvbP1zccZRUYcTjyCYQJ7n1iWKBcR8yDeGTj3mDphV"
-wormhole_solana_sdk = "HxLuvAscShj97WZqztRNzYmwoF46aLqKGvy8uv4Sf82k"
 
 [registry]
 url = "https://anchor.projectserum.com"
