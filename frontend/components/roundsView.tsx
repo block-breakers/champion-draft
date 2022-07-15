@@ -1,6 +1,5 @@
 import * as ethers from "ethers";
 import { useEffect, useState } from "react";
-import { useTimer } from 'react-timer-hook';
 import Countdown from "./countdown";
 
 type RoundsViewProps = {
@@ -25,7 +24,6 @@ const RoundsView = ({ contract }: RoundsViewProps) => {
 
     const findTimeLeft = async () => {
         const t = await contract.getTimeLeftInRound();
-        console.log("TIME IS", t);
         const time = new Date();
         time.setSeconds(time.getSeconds() + t + 1);
         setTimeLeft(time);
@@ -49,7 +47,6 @@ const RoundsView = ({ contract }: RoundsViewProps) => {
         new Promise(r => {
             setTimeout(r, 3000);
         }).then(() => {
-            console.log("finding time again");
             findTimeLeft();
         })
     }

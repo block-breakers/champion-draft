@@ -25,7 +25,6 @@ const ChampionXP = ({
 
     const [battleVAAs, setBattleVAAs] = useState<string[]>([]);
     const [disabled, setDisabled] = useState(false);
-    const [lastQueryIdx, setLastQueryIdx] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [voteVAAs, setVoteVAAs] = useState<string[]>([]);
 
@@ -49,9 +48,6 @@ const ChampionXP = ({
         const res = await fetch(url.toString());
         if (res.status == 200) {
             let data = await res.json();
-            console.log("fetch xp data is: ", data);
-            // setLastQueryIdx((lastQueryIdx) => lastQueryIdx + data.length);
-            // setBattleVAAs(battleVAAs => [...battleVAAs, ...data]);
             setBattleVAAs(data);
         }
         setIsLoading(false);
@@ -59,17 +55,14 @@ const ChampionXP = ({
 
     const getVotes = async (hash: string) => {
         setIsLoading(true);
-        console.log("getting votes")
         let url = new URL(serverBaseURL + "votes");
         url.searchParams.append("chain", userNetworkName);
         url.searchParams.append("champion", hash);
 
         const res = await fetch(url.toString());
-        console.log(res)
         if (res.status == 200) {
             try {
                 let data = await res.json();
-                console.log("fetch votes data is: ", data);
                 setVoteVAAs(data);
             } catch (e) {
                 console.log(e);
@@ -82,20 +75,14 @@ const ChampionXP = ({
 
     const onClaimXP = async (seq: string) => {
         setDisabled(true);
-        console.log("submitting xp for seq", seq);
 
         const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0");
-        console.log("emitter addr eth", emitterAddr);
 
         let url = `http://localhost:7071/v1/signed_vaa/${usersNetwork.wormholeChainId
             }/${emitterAddr}/${seq.toString()}`;
     
-        // console.log(url);
         let response = await fetch(url);
-        // console.log("fetched", response);
         let data = await response.json();
-
-        console.log("got data for claim xp", data)
 
         try {
             await (await contract.claimXP(hash, Buffer.from(data.vaaBytes, 'base64'))).wait();
@@ -115,28 +102,19 @@ const ChampionXP = ({
             setDisabled(false);
 
         }
-
-        console.log("finished submitting xp");
-
         router.reload();
     }
 
     const onClaimVote = async (seq: string) => {
         setDisabled(true);
-        console.log("submitting vote for seq", seq);
 
         const emitterAddr = String(await contract.getMessengerAddr()).substring(2).padStart(64, "0");
-        console.log("emitter addr eth", emitterAddr);
 
         let url = `http://localhost:7071/v1/signed_vaa/${usersNetwork.wormholeChainId
             }/${emitterAddr}/${seq.toString()}`;
     
-        // console.log(url);
         let response = await fetch(url);
-        // console.log("fetched", response);
         let data = await response.json();
-
-        console.log("got data for claim vote", data)
 
         try {
             await (await contract.audienceClaimPoints(Buffer.from(data.vaaBytes, 'base64'))).wait();
@@ -148,8 +126,6 @@ const ChampionXP = ({
                 window.alert("Unable to claim Vote vaa.");
             setDisabled(false);
         }
-
-        console.log("finished claiming vote");
 
         router.reload();
     }

@@ -1,4 +1,3 @@
-import * as ethers from "ethers";
 import { BattleInfo } from "./battleStarter";
 
 type BattleSummaryProps = {

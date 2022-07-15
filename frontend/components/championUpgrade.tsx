@@ -2,7 +2,6 @@ import * as ethers from "ethers";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { Network } from "../pages";
-// import * as storage from "../util/storage";
 
 type ChampionUpgradeProps = {
     provider: ethers.providers.Web3Provider;
@@ -58,7 +57,6 @@ const ChampionUpgrade = ({
             await getVotes();
         }
         const up = await contract.getUpgrades(hash);
-        console.log("UP: ", up);
         const allUpgrades = [];
         for (let i = 0; i < 4; i++) {
             if ((up >> (3 - i)) & 1) {
@@ -72,7 +70,6 @@ const ChampionUpgrade = ({
 
     const onUpgrade = async (choice: number) => {
         setDisabled(true);
-        console.log("upgrading choice", choice + 1);
         try {
             await (await contract.upgrade(hash, choice + 1)).wait();
         } catch (e) {
@@ -82,8 +79,6 @@ const ChampionUpgrade = ({
             else 
                 window.alert("Upgrade failed for unknown reason.");
         }
-
-        console.log("finished upgrade, getting upgrade points");
         try {
             await getUpgradePoints(hash);
         } catch (e) {
@@ -93,7 +88,6 @@ const ChampionUpgrade = ({
             else 
                 window.alert("Upgrade failed for unknown reason.");
         }
-        console.log("have upgrade points", upgradePoints);
 
         router.reload();
     }
@@ -114,7 +108,6 @@ const ChampionUpgrade = ({
 
     const onVote = async (choice: number) => {
         setDisabled(true);
-        console.log("voting for choice", choice + 1);
         try {
             await (await contract.audienceSubmitVote(choice + 1)).wait();
         } catch (e) {
@@ -125,8 +118,6 @@ const ChampionUpgrade = ({
                 window.alert("Vote failed for unknown reason")
             setDisabled(false);
         }
-
-        console.log("finished vote, getting votes points");
         try {
             await getVotes();
         } catch (e) {
@@ -136,15 +127,12 @@ const ChampionUpgrade = ({
             else
                 window.alert("Unable to get your votes");
         }
-        console.log("have votes points", audienceVotes);
-
         router.reload();
     }
 
     const getVotes = async () => {
         if (playerKind == "audience") {
             const member = await contract.audience(provider.getSigner().getAddress());
-            console.log("I am audience", member);
             setAudienceVotes(member.points);
             if (member.points != 0) {
                 setDisabled(false);

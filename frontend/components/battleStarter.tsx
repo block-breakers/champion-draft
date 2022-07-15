@@ -55,15 +55,11 @@ const BattleStarter = ({
       provider.getSigner()
     );
     let vaaAsBytes = Buffer.from(opponentVaa, "base64");
-    console.log(vaaAsBytes);
     let tx = await contract.crossChainBattle(championHash, vaaAsBytes);
-    console.log(tx);
     let receipt = await tx.wait();
-    console.log("receipt", receipt);
 
     const battleEvents = receipt.events.filter(event => event.event === "battleEvent");
     const battleOutcome = receipt.events.find(event => event.event === "battleOutcome");
-    console.log({battleEvents, battleOutcome});
     setBattleInfo({battleEvents, battleOutcome});
   };
 

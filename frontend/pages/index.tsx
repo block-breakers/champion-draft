@@ -112,10 +112,6 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
     );
   }, [provider, usersNetwork]);
 
-  // useEffect(() => {
-    
-  // }, [championHash, draftHash]);
-
   useEffect(() => {
     const tryChampion = storage.fetchChampionHash();
     const tryDraft = storage.fetchDraftHash();
@@ -191,7 +187,6 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
   return (
     <div
       className="flex flex-col items-center justify-center min-h-screen p-0 m-0 min-w-screen align-center"
-    // style={{ minHeight: "100vw" }}
     >
       <Head>
         <title>Champion Draft</title>

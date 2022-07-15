@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import * as ethers from "ethers";
 import { Network } from "../pages/index";
-import { randomWord } from "../util/random";
 import * as interfaceChecker from "../util/ercInterfaces";
 
 type TokenSelectorProps = {
@@ -20,7 +19,6 @@ const TokenSelector = ({
   const [contractAddress, setContractAddress] = useState<string>("");
   const [tokenId, setTokenId] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
 
   const lookupToken = async () => {
     if (contractAddress === "") {
@@ -41,24 +39,18 @@ const TokenSelector = ({
     }
 
     const newHash = await contract.getChampionHash(contractAddress, tokenId);
-    console.log("cc", await contract.champions(newHash));
     if ((await contract.champions(newHash)).championHash.toString() !== "0") {
-    console.log("skipping");
         setChampionHash(newHash);
         return;
     }
 
-    console.log("initiating tx");
     const tx = await contract.registerNFT(contractAddress, tokenId);
-    console.log("tx", tx);
     const receipt = await tx.wait();
-    console.log("receipt", receipt);
 
     const championHash = await contract.getChampionHash(
       contractAddress,
       tokenId
     );
-    console.log("Champion hash", championHash);
     setChampionHash(championHash);
   };
 

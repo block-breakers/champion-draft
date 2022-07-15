@@ -27,11 +27,8 @@ const ChampionCard = ({champion, serverBaseURL, networkName, isSelf, buttonOnCli
         url.searchParams.append("chain", networkName);
         url.searchParams.append("champion", champion.championHash.toHexString());
 
-        console.log(url.toString())
-
         fetch(url.toString()).then((res) => {
             res.json().then((vaa) => {
-                console.log("vaa is", vaa);
                 buttonOnClick(vaa, champion.championHash.toHexString())
             })
         }).catch()
@@ -39,54 +36,17 @@ const ChampionCard = ({champion, serverBaseURL, networkName, isSelf, buttonOnCli
 
     useEffect(() => {
         let url = "http://localhost:5000/metadataevm?id=";
-        // url += champion.championHash.toHexString().substring(0,3) == "0x7" ? "1" : "0";
         let uriArr = champion.uri.split("/");
         url += uriArr[uriArr.length-1]
-        console.log("URL IS", url)
         fetch(url).then((res) => {
             res.json().then((data) => {
-
-                console.log("image+name response", data);
                 setName(data.name)
                 setImageURI(data.image)
             })
         })
     }, [champion]);
 
-    // const fetchMetadata = async (uri: string) => {
-    //     console.log(" uri is", uri);
-    //     let response = await fetch(uri);
-    //     console.log("image+name metadata", response);
-    //     let data = await response.json();
-    // }
-
-    // fetchMetadata(champion.uri);
-    // fetchMetadata( + );
-
     return (
-        // <div key={vaa.seq} className="p-2 m-2 break-all border shadow">
-        //     <div>
-        //         <div className="font-bold">Address: </div>
-        //         {vaa.address}
-        //     </div>
-        //     <div>Sequence number: {vaa.seq.toString()}</div>
-        //     <div className="text-xs">Vaa: {vaa.vaa}</div>
-        //     <button
-        //         className="btn btn-blue"
-        //         onClick={() => {
-        //         navigator.permissions
-        //             .query({ name: "clipboard-write" })
-        //             .then((result) => {
-        //             if (result.state == "granted" || result.state == "prompt") {
-        //                 navigator.clipboard.writeText(champion.vaa);
-        //             }
-        //             });
-        //         }}
-        //     >
-        //         copy
-        //     </button>
-        // </div>
-        // <></>
         <div className="max-w-sm overflow-hidden rounded shadow-lg">
             {imageURI && 
             <img className="w-full" src={imageURI} />
