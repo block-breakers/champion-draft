@@ -5,6 +5,8 @@ import redis
 import asyncio
 import json
 import threading
+import nest_asyncio
+nest_asyncio.apply()
 
 class EVMListener:
 

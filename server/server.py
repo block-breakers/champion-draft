@@ -46,8 +46,8 @@ def setup(name):
 
     chainListeners[name] = listener
 
-evm0 = "evm0"
-setup(evm0)
+setup("evm0")
+setup("evm1")
 
 @app.route("/healthz")
 def healthz():
@@ -123,6 +123,8 @@ def votes():
 @app.route("/metadataevm")
 def metadataevm():
     id = request.args.get('id')
+
+    print("metadata got", id)
     
     if id == "1":
         return jsonify({

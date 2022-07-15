@@ -33,6 +33,7 @@ lru-dict==1.1.7
 MarkupSafe==2.1.1
 multiaddr==0.0.9
 multidict==6.0.2
+nest-asyncio==1.5.5
 netaddr==0.8.0
 packaging==21.3
 parsimonious==0.8.1
