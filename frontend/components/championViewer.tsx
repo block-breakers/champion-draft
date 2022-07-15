@@ -18,7 +18,15 @@ type ChampionViewerProps = {
   buttonText: string;
 };
 
-const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOnClick, buttonText}: ChampionViewerProps) => {
+const ChampionViewer = ({
+  networks,
+  provider,
+  abi,
+  serverBaseURL,
+  hash,
+  buttonOnClick,
+  buttonText,
+}: ChampionViewerProps) => {
   const [champions, setChampions] = useState<object[]>([]);
   const [selectedNetwork, setSelectedNetwork] = useState<Network>(
     networks[Object.keys(networks)[0]]
@@ -42,9 +50,9 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
 
   // parses an emitted findVAA event into a `VaaInfo`
   const getChampion = async (hash: string): Promise<object> => {
-      const champion = await contract.champions(hash);
-      return champion;
-    };
+    const champion = await contract.champions(hash);
+    return champion;
+  };
 
   // query all pre-existing findVAA events and load them into state
   const fetchChampions = async () => {
@@ -54,7 +62,6 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
     url.searchParams.append("chain", selectedNetworkName);
 
     const res = await fetch(url.toString());
-
 
     if (res.status == 200) {
       let data = await res.json();
@@ -81,17 +88,23 @@ const ChampionViewer = ({ networks, provider, abi, serverBaseURL, hash, buttonOn
         networks={networks}
       />
       <div className="mt-9 grid grid-cols-3 gap-4">
-        {isLoading ? "Loading..." : champions.map((championData) => (
-          (championData.championHash != 0 && (hash === null || championData.championHash.toHexString() !== hash)) &&
-          <ChampionCard
-            champion={championData}
-            serverBaseURL={serverBaseURL}
-            networkName={selectedNetworkName}
-            isSelf={false}
-            buttonOnClick={buttonOnClick}
-            buttonText={buttonText}
-          />
-        ))}
+        {isLoading
+          ? "Loading..."
+          : champions.map(
+              (championData) =>
+                championData.championHash != 0 &&
+                (hash === null ||
+                  championData.championHash.toHexString() !== hash) && (
+                  <ChampionCard
+                    champion={championData}
+                    serverBaseURL={serverBaseURL}
+                    networkName={selectedNetworkName}
+                    isSelf={false}
+                    buttonOnClick={buttonOnClick}
+                    buttonText={buttonText}
+                  />
+                )
+            )}
       </div>
     </div>
   );

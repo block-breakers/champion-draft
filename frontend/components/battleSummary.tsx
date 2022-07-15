@@ -1,4 +1,4 @@
-import { BattleInfo } from "./battleStarter";
+import { BattleInfo } from "../pages/battle";
 
 type BattleSummaryProps = {
   battleInfo: BattleInfo;
@@ -7,7 +7,7 @@ type BattleSummaryProps = {
 const BattleSummary = ({ battleInfo }: BattleSummaryProps) => {
   const { battleEvents, battleOutcome } = battleInfo;
   return (
-    <div className="p-4 border m-4">
+    <div className="p-4 m-4 border">
       <table>
         <thead>
           <tr>
@@ -18,15 +18,21 @@ const BattleSummary = ({ battleInfo }: BattleSummaryProps) => {
         <tbody>
           {battleEvents.map((event) => (
             <tr>
-              <td className="px-2 text-center">{event.args.damageByHash.toHexString()}</td>
-              <td className="px-2 text-center">{event.args.damage.toString()}</td>
+              <td className="px-2 text-center">
+                {event.args.damageByHash.toHexString()}
+              </td>
+              <td className="px-2 text-center">
+                {event.args.damage.toString()}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div className="font-bold">Winner: </div>{battleOutcome.args.winnerHash.toHexString()}
+      <div className="font-bold">Winner: </div>
+      {battleOutcome.args.winnerHash.toHexString()}
       <br />
-      <div className="font-bold">Loser: </div>{battleOutcome.args.loserHash.toHexString()}
+      <div className="font-bold">Loser: </div>
+      {battleOutcome.args.loserHash.toHexString()}
     </div>
   );
 };
