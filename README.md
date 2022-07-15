@@ -8,7 +8,7 @@ Champion Draft uses wormhole to allow you to register and battle NFTs from any c
 
 To set up this project locally, a couple steps are required.
 
-### 1. Set up EVM/Solana chains + wormhole locally
+### 1. Set up EVM/Solana chains + Wormhole local validator
 
 1. Clone the xdapp-book repo from certusone
 ```
@@ -21,7 +21,7 @@ cd xdapp-book
 cd projects/wormhole-local-validator
 npm install
 ```
-3. Run evm chain (and any other supported chain, see package.json)
+3. Run EVM chain
 
 ```
 npm run evm
@@ -33,6 +33,16 @@ The output should display the following towards the end. Save the address that t
 Token deployed at: 0x2D8BE6BF0baA74e0A907016679CaE9190e80dD0A
 NFT deployed at: 0xaf5C4C6C7920B4883bC6252e9d9B8fE27187Cf68
 WETH token deployed at: 0x1b88Bdb8269A1aB1372459F5a4eC3663D6f5cCc4
+```
+
+4. (optional) Run Solana chain
+Install the [Solana tool chain](https://docs.solana.com/cli/install-solana-cli-tools).
+
+Install the [Anchor framework](https://book.anchor-lang.com/getting_started/installation.html) for Solana.
+
+Start the chain
+```
+npm run solana
 ```
 
 4. Finally, run wormhole
@@ -60,7 +70,7 @@ The output should look something like this (with only evm chains running):
 sh deploy.sh
 ```
 
-### 3. Ser up redis and server
+### 3. Set up redis and server
 1. Set up local [redis server](https://redis.io/docs/getting-started/)
 2. Install python dependencies, make sure python3.8 is installed
 
@@ -114,4 +124,33 @@ Token Id: 0
 Contract: 0xaf5C4C6C7920B4883bC6252e9d9B8fE27187Cf68
 Token Id: 1
 ```
+
+
+## Running Solana Tests
+(Perform the following from the `chains/solana` directory in this repo)
+
+Make sure the Solana test validator and Wormhole local validator are running (if you've followed the above you should be ok).
+
+1. Airdrop yourself some funds
+```
+solana airdrop 100 -k ./tests/test_orchestrator_keypair.json
+```
+
+2. Run the test suite
+```
+anchor test --skip-local-validator # if you have solana running already (for example, if you followed the setup above)
+anchor test # if you don't have solana running already
+```
+
+## FAQ
+
+**Q:** guardiand is not making VAAs available via HTTP (this could manifest as 404 errors when running the Solana tests or champions not appearing when running the frontend)
+
+**A:** make sure that you run both EVM chains and the Solana chain before starting guardiand.
+
+
+**Q:** my transactions aren't being initiated or aren't finalizing when interacting from the frontend.
+
+**A:** this is likely an issue with Metamask's nonce. Try reinstalling the Metamask extension.
+
 
