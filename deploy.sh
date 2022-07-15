@@ -1,3 +1,3 @@
-node orchestrator.mjs evm0 deploy
-node orchestrator.mjs evm1 deploy
+node evm-deploy.mjs evm0 deploy
+node evm-deploy.mjs evm1 deploy
 
