@@ -1,8 +1,10 @@
 use anchor_lang::prelude::*;
-use borsh::{BorshDeserialize, BorshSerialize};
-use std::{
-    io::Write,
+use byteorder::{
+    BigEndian,
+    WriteBytesExt,
 };
+use borsh::{BorshDeserialize, BorshSerialize};
+use std::{io::Cursor, io::Write};
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub struct PostMessageData {
@@ -19,11 +21,11 @@ pub struct PostMessageData {
 #[derive(AnchorDeserialize, AnchorSerialize)]
 pub enum ConsistencyLevel {
     Confirmed,
-    Finalized
+    Finalized,
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize)]
-pub enum Instruction{
+pub enum Instruction {
     Initialize,
     PostMessage,
     PostVAA,
@@ -108,4 +110,19 @@ impl AnchorDeserialize for PostedMessageData {
             <MessageData as BorshDeserialize>::deserialize(buf)?,
         ))
     }
+}
+
+// Convert a full VAA structure into the serialization of its unique components, this structure is
+// what is hashed and verified by Guardians.
+pub fn serialize_vaa(vaa: &MessageData) -> Vec<u8> {
+    let mut v = Cursor::new(Vec::new());
+    v.write_u32::<BigEndian>(vaa.vaa_time).unwrap();
+    v.write_u32::<BigEndian>(vaa.nonce).unwrap();
+    v.write_u16::<BigEndian>(vaa.emitter_chain.clone() as u16)
+        .unwrap();
+    v.write(&vaa.emitter_address).unwrap();
+    v.write_u64::<BigEndian>(vaa.sequence).unwrap();
+    v.write_u8(vaa.consistency_level).unwrap();
+    v.write(&vaa.payload).unwrap();
+    v.into_inner()
 }
