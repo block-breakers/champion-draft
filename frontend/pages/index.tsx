@@ -137,9 +137,7 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
   // query contract to see if this audience memeber is already drafting
   useEffect(() => {
     if (contract && provider && playerKind == "audience") {
-      console.log("MY address is ", provider.getSigner().getAddress());
       contract.audience(provider.getSigner().getAddress()).then((member) => {
-        console.log("got member ", member);
         if (member.currentDraft != 0) {
           storage.saveDraftHash(member.currentDraft.toHexString());
           setDraftHash(member.currentDraft.toHexString());
@@ -171,7 +169,6 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
     }
     contract.registerAudienceMember(championHash)
     .then(() => {
-      console.log("")
       storage.saveDraftHash(championHash);
       setDraftHash(championHash);
     }).catch((e) => {
@@ -234,12 +231,12 @@ const Home: NextPage<HomeProps> = ({ networks, abi, serverBaseURL }) => {
                     hash={playerKind == "fighter" ? championHash : draftHash}
                     playerKind={playerKind}
                     />
-                  <ChampionXP 
-                    contract={contract} 
+                  <ChampionXP
+                    contract={contract}
                     usersNetwork={usersNetwork}
-                    serverBaseURL={serverBaseURL} 
-                    userNetworkName={usersNetworkName} 
-                    hash={playerKind == "fighter" ? championHash : draftHash} 
+                    serverBaseURL={serverBaseURL}
+                    userNetworkName={usersNetworkName}
+                    hash={playerKind == "fighter" ? championHash : draftHash}
                     playerKind={playerKind}
                     />
                 </>
